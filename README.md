@@ -52,3 +52,5 @@ stata_write("filename.dta", array("data" => array(
                                               array(44 => "44 Face" ,
                                                     55 => "55 Call center"))));
 </pre>
+
+In order to compile, please type <b>phpize</b> to generate the config files.
