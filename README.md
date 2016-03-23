@@ -6,8 +6,14 @@ PHP Extension for reading and writing STATA files
 I am writing this extension to facilitate the data dissemination of our projects: The Understanding America Study Datapages (http://uasdata.usc.edu) and the Gateway to Global Aging Data (http://g2aging.org). It has already been implemented in:<br>
 
 1) Read and display Highcharts charts directly from Stata<br>
-2) Provide descriptive information<br>
-3) Generate question carts by picking and combining Stata files<br>
+2) Provide descriptive information to the UAS Datapages viewers<br>
+3) Generate question carts by opening and combining Stata files on t hhe fly<br>
+
+This PHP module has only been tested in Apache.
+
+In order to compile the module, please type <b>phpize</b> on the directory to generate the config files.
+
+
 
 Example use:
 <pre>
@@ -53,4 +59,3 @@ stata_write("filename.dta", array("data" => array(
                                                     55 => "55 Call center"))));
 </pre>
 
-In order to compile, please type <b>phpize</b> to generate the config files.
