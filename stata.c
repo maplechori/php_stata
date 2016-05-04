@@ -435,7 +435,6 @@ PHP_FUNCTION(stata_write)
 
 
     if (zend_hash_exists(Z_ARRVAL_P(labels), "labels", sizeof("labels"))) {
-          fprintf(stderr, "Key \"labels\" exists<br>");
           zval **innerLabels;
 	  zval **vlabels;
 	  HashPosition position;
