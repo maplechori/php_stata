@@ -115,7 +115,7 @@ writeStataValueLabel(const char *labelName, zval ** theselabels,
    HashPosition labelposition;
    HashPosition labelposition2;
    zval ** currentLabel;
- 
+
    for (zend_hash_internal_pointer_reset_ex(Z_ARRVAL_PP(theselabels), &labelposition), i=0;
                             zend_hash_get_current_data_ex(Z_ARRVAL_PP(theselabels), (void**) &currentLabel, &labelposition) == SUCCESS;
                                      zend_hash_move_forward_ex(Z_ARRVAL_PP(theselabels), &labelposition), i++) {
@@ -148,7 +148,7 @@ writeStataValueLabel(const char *labelName, zval ** theselabels,
 	
 
 	OutIntegerBinary((int)len, fp, 0);
-        printf("%s %d\n\r", Z_STRVAL_PP(currentLabel), Z_STRLEN_PP(currentLabel));
+        zend_error(E_NOTICE, "%s %d", Z_STRVAL_PP(currentLabel), Z_STRLEN_PP(currentLabel));
 	len += Z_STRLEN_PP(currentLabel) + 1;
     }
    /* values: just 1,2,3,...*/
@@ -599,6 +599,7 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
         zend_hash_move_forward_ex(Z_ARRVAL_PP(data_traverse), &position_data)) {
 
 
+	
 
 
         for (zend_hash_internal_pointer_reset_ex(Z_ARRVAL_PP(observations), &variable_position), i=0;
@@ -610,17 +611,16 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
                 long index;
 		int k;	
 
+		zend_error(E_NOTICE, "wee: %s", keyStr);
+
 		
 	        key_type = zend_hash_get_current_key_ex(Z_ARRVAL_PP(observations), &keyStr, &key_len, &index, 0, &variable_position);
-
-		printf("%s", keyStr);
 
 		switch(Z_TYPE_PP(variables))
 		{
 			case IS_LONG:
 			case IS_BOOL:
 				zend_error(E_NOTICE, "IS LONG %ld", Z_LVAL_PP(variables));
-				printf("%ld %d", Z_LVAL_PP(variables), *types[i]);
 				if (*wrTypes[i] == STATA_SE_SHORTINT)
 					OutShortIntBinary(Z_LVAL_PP(variables), fp);
 				else			
@@ -628,7 +628,7 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
 				break;
 			case IS_DOUBLE:
 				OutDoubleBinary(Z_DVAL_PP(variables), fp, 0);
-				zend_error(E_NOTICE, "IS DOUBLE %lf", Z_DVAL_PP(variables));
+				zend_error(E_NOTICE, "IS DOUBLE %f", Z_DVAL_PP(variables));
 				break;
 /*
 			case IS_BOOL:
@@ -654,17 +654,19 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
 				{
 				        if (k > 244)
 					    k = 244;
+
 					OutStringBinary(Z_STRVAL_PP(variables), fp, k);
 				}
 				int l = 0;
 				for (l = *(types[i])-k; l > 0; l--)
 				{
 				 	//printf("data str: %d %d %d\n\r", *types[i], l, k);
+
 					OutByteBinary(0, fp);
 				}
 				break;
 			default:
-				printf("this should not happen\n\r");
+				zend_error(E_NOTICE, "this should not happen");
 				break;
 			
 		}

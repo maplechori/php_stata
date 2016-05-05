@@ -458,7 +458,7 @@ PHP_FUNCTION(stata_write)
 							    //php_printf("index: %ld<br>", index);
 							    break;
 						  default:
-							    php_printf("error<br>");
+							    break;
 					  }
 				}
 
