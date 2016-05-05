@@ -42,20 +42,20 @@ static void OutIntegerBinary(int i, FILE * fp, int naok)
 {
     i=((i == NA_INTEGER) & !naok ? STATA_INT_NA : i);
     if (fwrite(&i, sizeof(int), 1, fp) != 1)
-	error("a binary write error occurred");
+	zend_error(E_ERROR, "a binary write error occurred");
 
 }
 
 static void OutByteBinary(unsigned char i, FILE * fp)
 {
     if (fwrite(&i, sizeof(char), 1, fp) != 1)
-	error("a binary write error occurred");
+	zend_error(E_ERROR, "a binary write error occurred");
 }
 static void OutDataByteBinary(int i, FILE * fp)
 {
     i=(unsigned char) ((i == NA_INTEGER) ? STATA_BYTE_NA : i);
     if (fwrite(&i, sizeof(char), 1, fp) != 1)
-	error("a binary write error occurred");
+	zend_error(E_ERROR, "a binary write error occurred");
 }
 
 static void OutShortIntBinary(int i,FILE * fp)
@@ -70,9 +70,9 @@ static void OutShortIntBinary(int i,FILE * fp)
     second = (unsigned char)(i >> 8);
 #endif
   if (fwrite(&first, sizeof(char), 1, fp) != 1)
-    error("a binary write error occurred");
+    zend_error(E_ERROR, "a binary write error occurred");
   if (fwrite(&second, sizeof(char), 1, fp) != 1)
-    error("a binary write error occurred");
+    zend_error(E_ERROR, "a binary write error occurred");
 }
 
 
@@ -80,7 +80,7 @@ static void  OutDoubleBinary(double d, FILE * fp, int naok)
 {
     d = (R_FINITE(d) ? d : STATA_DOUBLE_NA);
     if (fwrite(&d, sizeof(double), 1, fp) != 1)
-	error("a binary write error occurred");
+	zend_error(E_ERROR,"a binary write error occurred");
 }
 
 
@@ -88,7 +88,7 @@ static void OutStringBinary(const char *buffer, FILE * fp, int nchar)
 {
     if (nchar == 0) return;
     if (fwrite(buffer, nchar, 1, fp) != 1)
-	error("a binary write error occurred");
+	zend_error(E_ERROR,"a binary write error occurred");
 }
 
 static char* nameMangleOut(char *stataname, int len)
@@ -119,18 +119,16 @@ writeStataValueLabel(const char *labelName, zval ** theselabels,
    for (zend_hash_internal_pointer_reset_ex(Z_ARRVAL_PP(theselabels), &labelposition), i=0;
                             zend_hash_get_current_data_ex(Z_ARRVAL_PP(theselabels), (void**) &currentLabel, &labelposition) == SUCCESS;
                                      zend_hash_move_forward_ex(Z_ARRVAL_PP(theselabels), &labelposition), i++) {
-		printf("type: %d , len: %d\n\r", Z_TYPE_PP(currentLabel), Z_STRLEN_PP(currentLabel));	
+		zend_error(E_NOTICE, "type: %d , len: %d", Z_TYPE_PP(currentLabel), Z_STRLEN_PP(currentLabel));	
 	        txtlen += Z_STRLEN_PP(currentLabel) + 1;
    }
    
    len += txtlen;
    OutIntegerBinary((int)len, fp, 0); 
-   printf("len: %ld\n\r", len);
+   zend_error(E_NOTICE,"len: %ld", len);
 /* length of table */
     char labelName2[namelength + 1];
-    printf("labelName: %s\n\r", labelName);
     strncpy(labelName2, labelName, namelength + 1); // nameMangleOut changes its arg.
-    printf("labelName2: %s\n\r", labelName2);
     OutStringBinary(nameMangleOut(labelName2, strlen(labelName)), fp, namelength);
     OutByteBinary(0, fp);
 /* label format name */
@@ -140,7 +138,6 @@ writeStataValueLabel(const char *labelName, zval ** theselabels,
  /*padding*/
     OutIntegerBinary(zend_hash_num_elements(Z_ARRVAL_PP(theselabels)), fp, 0);
     OutIntegerBinary(txtlen, fp, 0);
-    printf("offsets \n\r");
  /* offsets */
     len = 0;
    
@@ -172,11 +169,9 @@ writeStataValueLabel(const char *labelName, zval ** theselabels,
         	int k;
 
         	key_type = zend_hash_get_current_key_ex(Z_ARRVAL_PP(theselabels), &keyStr, &key_len, &index, 0, &labelposition);
-		printf("currentValue: %ld\n\r", index);
+		zend_error(E_NOTICE, "currentValue: %ld", index);
 		OutIntegerBinary(index, fp, 0);
         }
-
-	printf("levels \n\r");
 
 //	}
 //	else{
@@ -197,12 +192,12 @@ writeStataValueLabel(const char *labelName, zval ** theselabels,
         txtlen -= len+1;
 
         if (txtlen < 0)
-                printf("this should happen: overrun");
+                zend_error(E_WARNING, "this should happen: overrun");
 
          }
     
     if (txtlen > 0) 
-	printf("this should happen: underrun");
+	zend_error(E_WARNING, "this should happen: underrun");
 
     return 1;
 }
@@ -253,8 +248,8 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
     zend_hash_find(Z_ARRVAL_P(data), "data", sizeof("data"), (void **)&data_inner);
     nobs = zend_hash_num_elements(Z_ARRVAL_PP(data_inner)); 
 
-    printf("Observations: %d\n\r", nobs);
-    printf("Variables: %d\n\r", nvar);
+    zend_error(E_NOTICE, "Observations: %d", nobs);
+    zend_error(E_NOTICE, "Variables: %d", nvar);
 
     OutShortIntBinary(nvar, fp);
     OutIntegerBinary(nobs, fp, 1);
@@ -400,7 +395,7 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
 					}
 					
 					if (charlen > 244)
-						printf("character strings of >244 bytes in column %s will be truncated", keyStr);
+						zend_error(E_WARNING, "character strings of >244 bytes in column %s will be truncated", keyStr);
 					
 					charlen = ( charlen < 244) ? charlen : 244;
 
@@ -624,7 +619,7 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
 		{
 			case IS_LONG:
 			case IS_BOOL:
-				printf("IS LONG %ld\n\r", Z_LVAL_PP(variables));
+				zend_error(E_NOTICE, "IS LONG %ld", Z_LVAL_PP(variables));
 				printf("%ld %d", Z_LVAL_PP(variables), *types[i]);
 				if (*wrTypes[i] == STATA_SE_SHORTINT)
 					OutShortIntBinary(Z_LVAL_PP(variables), fp);
@@ -633,7 +628,7 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
 				break;
 			case IS_DOUBLE:
 				OutDoubleBinary(Z_DVAL_PP(variables), fp, 0);
-				printf("IS DOUBLE %lf\n\r", Z_DVAL_PP(variables));
+				zend_error(E_NOTICE, "IS DOUBLE %lf", Z_DVAL_PP(variables));
 				break;
 /*
 			case IS_BOOL:
@@ -642,7 +637,7 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
 				break;
 */
 			case IS_STRING:
-				printf("IS STRING %s %d\n\r", Z_STRVAL_PP(variables), Z_STRLEN_PP(variables));
+				zend_error(E_NOTICE, "IS STRING %s %d", Z_STRVAL_PP(variables), Z_STRLEN_PP(variables));
 				k = Z_STRLEN_PP(variables);
 				if (k == 0)
 				{
@@ -759,15 +754,26 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
 
 void do_writeStata(char *fileName, zval *data, zval *variables, zval *labels)
 {
-    FILE *fp;
+    FILE *fp = NULL;
 
     if ((sizeof(double) != 8) | (sizeof(int) != 4) | (sizeof(float) != 4))
-      error("cannot yet read write .dta on this platform");
+    {
+      zend_error(E_ERROR, "cannot yet read write .dta on this platform");
+      return;
+    }
+
 
     fp = fopen(fileName, "wb");
-    if (!fp) 
-         error("unable to open file for writing: '%s'", strerror(errno));
-    R_SaveStataData(fp, data, variables, labels);
-    fclose(fp);
+
+    if (fp == NULL)
+    {	     
+	 zend_error(E_WARNING, "unable to open file or path for writing: %s", strerror(errno));	 
+ 	 return;    
+    }
+    else
+    {
+    	R_SaveStataData(fp, data, variables, labels);
+    	fclose(fp);
+    }
 
 }

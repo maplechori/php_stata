@@ -98,7 +98,7 @@ PHP_FUNCTION (stata_open)
       RETURN_NULL ();
     }
 
-  fprintf (stderr, "Opening stata file: %s\n", name);
+  zend_error(E_NOTICE, "Opening stata file: %s", name);
 
   dta = do_readStata (name);
 
@@ -397,7 +397,7 @@ PHP_FUNCTION (stata_data)
 	      break;
 	    default:
 	      if (stv->valueType > 244)
-		error ("unknown data type");
+		zend_error (E_ERROR,"unknown data type");
 	      add_assoc_string (vararray[counterObs], stv->name, obd->value.string, 1);
 	      break;
 	    }
@@ -422,16 +422,10 @@ PHP_FUNCTION(stata_write)
     int str_len; 
     int i;
 
-
-
     if (zend_parse_parameters (ZEND_NUM_ARGS ()TSRMLS_CC, "saaa", &fname, &str_len, &data, &variables, &labels) == FAILURE)
     {
       RETURN_NULL ();
     }
-
-
-    zval **datas;
-    char **data_array = NULL;
 
 
     if (zend_hash_exists(Z_ARRVAL_P(labels), "labels", sizeof("labels"))) {
@@ -479,6 +473,5 @@ PHP_FUNCTION(stata_write)
 
 
     do_writeStata(fname, data, variables, labels);
-
 
 }

@@ -31,7 +31,7 @@ static int InIntegerBinary(FILE * fp, int naok, int swapends)
 {
     int i;
     if (fread(&i, sizeof(int), 1, fp) != 1)
-        error("a binary read error occurred");
+        zend_error(E_ERROR, "a binary read error occurred");
     if (swapends)
         reverse_int(i);
     return ((i == STATA_INT_NA) & !naok ? NA_INTEGER : i);
@@ -41,7 +41,7 @@ static int InByteBinary(FILE * fp, int naok)
 {
     signed char i;
     if (fread(&i, sizeof(char), 1, fp) != 1)
-        error("a binary read error occurred");
+        zend_error(E_ERROR, "a binary read error occurred");
     return  ((i == STATA_BYTE_NA) & !naok ? NA_INTEGER : (int) i);
 }
 /* read a single byte  */
@@ -49,7 +49,7 @@ static int RawByteBinary(FILE * fp, int naok)
 {
     unsigned char i;
     if (fread(&i, sizeof(char), 1, fp) != 1)
-        error("a binary read error occurred");
+        zend_error(E_ERROR,"a binary read error occurred");
     return  ((i == STATA_BYTE_NA) & !naok ? NA_INTEGER : (int) i);
 }
 
@@ -74,7 +74,7 @@ static double InDoubleBinary(FILE * fp, int naok, int swapends)
 {
     double i;
     if (fread(&i, sizeof(double), 1, fp) != 1)
-        error("a binary read error occurred");
+        zend_error(E_ERROR, "a binary read error occurred");
     if (swapends)
         reverse_double(i);
     return ((i == STATA_DOUBLE_NA) & !naok ? NA_REAL : i);
@@ -84,7 +84,7 @@ static double InFloatBinary(FILE * fp, int naok, int swapends)
 {
     float i;
     if (fread(&i, sizeof(float), 1, fp) != 1)
-        error("a binary read error occurred");
+        zend_error(E_ERROR, "a binary read error occurred");
     if (swapends)
         reverse_float(i);
     return ((i == STATA_FLOAT_NA) & !naok ? NA_REAL :  (double) i);
@@ -93,7 +93,7 @@ static double InFloatBinary(FILE * fp, int naok, int swapends)
 static void InStringBinary(FILE * fp, int nchar, char* buffer)
 {
     if (fread(buffer, nchar, 1, fp) != 1)
-        error("a binary read error occurred");
+        zend_error(E_ERROR, "a binary read error occurred");
 }
 
 static char* nameMangle(char *stataname, int len){
@@ -152,7 +152,7 @@ struct StataDataFile * R_LoadStataData(FILE *fp)
 	fmtlist_len = 49;
 	break;
     default:
-	error("not a Stata version 5-12 .dta file");
+	zend_error(E_ERROR, "not a Stata version 5-12 .dta file");
     }
     stata_endian = (int) RawByteBinary(fp, 1);     /* byte ordering */
     swapends = stata_endian != CN_TYPE_NATIVE;
@@ -197,7 +197,7 @@ struct StataDataFile * R_LoadStataData(FILE *fp)
             struct StataVariable * stv = ecalloc(1, sizeof(struct StataVariable));
 
 	    if (stv == NULL)
-		fprintf(stderr, "Out of memory\n\r");
+		zend_error(E_ERROR, "Out of memory");
  
             if (df->variables == NULL)
             {
@@ -223,7 +223,7 @@ struct StataDataFile * R_LoadStataData(FILE *fp)
 		break;
 	    default:
 		if (abyte < STATA_STRINGOFFSET)
-		    error("unknown data type");
+		    zend_error(E_ERROR,"unknown data type");
 		break;
 	    }
 	}
@@ -232,7 +232,7 @@ struct StataDataFile * R_LoadStataData(FILE *fp)
 	for(i = 0; i < nvar; i++){
             struct StataVariable * stv = ecalloc(1, sizeof(struct StataVariable));
 	    if (stv == NULL)
-		fprintf(stderr, "Out of memory\n\r");
+		zend_error(E_ERROR, "Out of memory");
 
             if (df->variables == NULL)
             {
@@ -257,7 +257,7 @@ struct StataDataFile * R_LoadStataData(FILE *fp)
 		break;
 	    default:
 		if (abyte > 244)
-		    error("unknown data type");
+		    zend_error(E_ERROR,"unknown data type");
 		break;
 	    }
 	}
@@ -346,7 +346,7 @@ struct StataDataFile * R_LoadStataData(FILE *fp)
     else
 	charlen = (InShortIntBinary(fp, 1, swapends));
     if (charlen != 0)
-	error("something strange in the file\n (Type 0 characteristic of nonzero length)");
+	zend_error(E_ERROR, "something strange in the file (Type 0 characteristic of nonzero length)");
 
     struct StataObservation * obsp = NULL;
     struct StataObservation *obspcurr = NULL;
@@ -358,7 +358,7 @@ struct StataDataFile * R_LoadStataData(FILE *fp)
             {
 		df->observations = ecalloc(1, sizeof(struct StataObservation));
 		if (df->observations == NULL)
-			fprintf(stderr, "Out of memory\n\r");
+			zend_error(E_ERROR, "Out of memory");
 		obspcurr = df->observations;
 		obspcurr->n = i;
             }
@@ -366,7 +366,7 @@ struct StataDataFile * R_LoadStataData(FILE *fp)
 	    {
 		obspcurr->next = ecalloc(1, sizeof(struct StataObservation));
 		if (obspcurr->next == NULL)
-			fprintf(stderr, "Out of memory\n\r");
+			zend_error(E_ERROR, "Out of memory");
 		obspcurr = obspcurr->next;
 		obspcurr->n = i;
             }
@@ -404,7 +404,7 @@ struct StataDataFile * R_LoadStataData(FILE *fp)
 		default:
 		    charlen = stv->valueType - STATA_STRINGOFFSET;
 		    if(charlen > 244) {
-			printf("invalid character string length -- truncating to 244 bytes");
+			zend_error(E_WARNING, "invalid character string length -- truncating to 244 bytes");
 			charlen = 244;
 		    }
 		    InStringBinary(fp, charlen, stringbuffer);
@@ -466,7 +466,7 @@ struct StataDataFile * R_LoadStataData(FILE *fp)
 		default:
 		    charlen = stv->valueType-STATA_SE_STRINGOFFSET;
 		    if(charlen > 244) {
-			printf("invalid character string length -- truncating to 244 bytes");
+			zend_error(E_WARNING, "invalid character string length -- truncating to 244 bytes");
 			charlen = 244;
 		    }
 		    InStringBinary(fp, charlen, stringbuffer);
@@ -491,7 +491,7 @@ struct StataDataFile * R_LoadStataData(FILE *fp)
 	    /* first int not needed, use fread directly to trigger EOF */
 	    res = (int) fread((int *) aname, sizeof(int), 1, fp);
 	    if (feof(fp)) break;
-	    if (res != 1) printf("a binary read error occurred");
+	    if (res != 1) zend_error(E_ERROR, "a binary read error occurred");
 
 	    InStringBinary(fp, varnamelength+1, aname);
 	    RawByteBinary(fp, 1); RawByteBinary(fp, 1); RawByteBinary(fp, 1); /*padding*/
@@ -630,18 +630,18 @@ struct StataDataFile * do_readStata(char * fileName)
 
     if ((sizeof(double)!=8) | (sizeof(int)!=4) | (sizeof(float)!=4))
     {
-      fprintf(stderr, "can not yet read Stata .dta on this platform");
+      zend_error(E_ERROR, "can not yet read Stata .dta on this platform");
       return NULL;
     }
 
     fp = fopen(fileName, "rb");
     if (!fp)
     {
-	fprintf(stderr, "unable to open file: '%s'", strerror(errno));
+	zend_error(E_ERROR, "unable to open file: '%s'", strerror(errno));
 	return NULL;
     }
     df = R_LoadStataData(fp);
-    fprintf(stderr, "Observations: %d\n\r",  df->nobs);
+    zend_error(E_NOTICE, "Observations: %d",  df->nobs);
     fclose(fp);
     return df;
 }
