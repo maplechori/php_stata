@@ -13,12 +13,12 @@ This PHP module has only been tested in Apache.
 
 In order to compile the module, please type <b>phpize</b> on the directory to generate the config files.
 
-1) install php5-dev (for phpize)
-2) cd to directory with source files
-3) $ phpize
-4) $ ./configure
-5) $ make install
-6) On successful execution, the extension stata.so can be found in the subdirectory “modules”
+1) install php5-dev (for phpize)<br>
+2) cd to directory with source files<br>
+3) $ phpize<br>
+4) $ ./configure<br>
+5) $ make install<br>
+6) On successful execution, the extension stata.so can be found in the subdirectory “modules”<br><br>
 
 
 
