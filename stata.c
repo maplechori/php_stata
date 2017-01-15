@@ -72,8 +72,6 @@ ZEND_GET_MODULE (stata)
   php_info_print_table_row (2, "version", PHP_STATA_VERSION);
   php_info_print_table_row (2, "author", PHP_STATA_AUTHOR);
   php_info_print_table_row (2, "homepage", "http://www.adrianmontero.info");
-  php_info_print_table_row (2, "open sourced by",
-			    "CESR University of Southern California");
   php_info_print_table_end ();
 }
 
