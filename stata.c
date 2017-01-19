@@ -1,87 +1,194 @@
-
 /*
- *  PHP Stata Extension 
- *  Copyright (C) 2014 Adrian Montero
- *
- *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
- *  (at your option) any later version.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, a copy is available at
- *  http://www.gnu.org/licenses/gpl-2.0.html
- */
+  +----------------------------------------------------------------------+
+  | PHP Version 7                                                        |
+  +----------------------------------------------------------------------+
+  | Copyright (c) 1997-2016 The PHP Group                                |
+  +----------------------------------------------------------------------+
+  | This source file is subject to version 3.01 of the PHP license,      |
+  | that is bundled with this package in the file LICENSE, and is        |
+  | available through the world-wide-web at the following url:           |
+  | http://www.php.net/license/3_01.txt                                  |
+  | If you did not receive a copy of the PHP license and are unable to   |
+  | obtain it through the world-wide-web, please send a note to          |
+  | license@php.net so we can mail you a copy immediately.               |
+  +----------------------------------------------------------------------+
+  | Author:                                                              |
+  +----------------------------------------------------------------------+
+*/
 
-
+/* $Id$ */
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-#include "php.h"
-#include "stataread.h"
-#include "stata.h"
-int le_stata_file;
 
+#include "php.h"
+#include "php_ini.h"
+#include "ext/standard/info.h"
+#include "stataread.h"
+#include "php_stata.h"
+
+/* If you declare any globals in php_stata.h uncomment this:
+ZEND_DECLARE_MODULE_GLOBALS(stata)
+*/
+
+/* True global resources - no need for thread safety here */
 #define PHP_STATA_FILE_RES_NAME "Stata File Resource"
 
+static int le_stata_file;
 
-// list of custom PHP functions provided by this extension
-// set {NULL, NULL, NULL} as the last record to mark the end of list
-static zend_function_entry stata_functions[] = {
-    PHP_FE (stata_open, NULL)
-    PHP_FE (stata_observations, NULL)
-    PHP_FE (stata_data, NULL)
-    PHP_FE (stata_variables, NULL)
-    PHP_FE (stata_nvariables, NULL)
-    PHP_FE (stata_labels, NULL)
-    PHP_FE (stata_close, NULL) 
-    PHP_FE (stata_write, NULL)
-    {NULL, NULL, NULL}
-};
+/* {{{ PHP_INI
+ */
+/* Remove comments and fill if you need to have entries in php.ini
+PHP_INI_BEGIN()
+    STD_PHP_INI_ENTRY("stata.global_value",      "42", PHP_INI_ALL, OnUpdateLong, global_value, zend_stata_globals, stata_globals)
+    STD_PHP_INI_ENTRY("stata.global_string", "foobar", PHP_INI_ALL, OnUpdateString, global_string, zend_stata_globals, stata_globals)
+PHP_INI_END()
+*/
+/* }}} */
 
-// the following code creates an entry for the module and registers it with Zend.
-zend_module_entry stata_module_entry = {
-#if ZEND_MODULE_API_NO >= 20010901
-  STANDARD_MODULE_HEADER,
-#endif
-  PHP_STATA_EXTNAME,
-  stata_functions,
-  PHP_MINIT (stata),		// name of the MINIT function or NULL if not applicable
-  NULL,				// name of the MSHUTDOWN function or NULL if not applicable
-  NULL,				// name of the RINIT function or NULL if not applicable
-  NULL,				// name of the RSHUTDOWN function or NULL if not applicable
-  PHP_MINFO (stata),		// name of the MINFO function or NULL if not applicable
-#if ZEND_MODULE_API_NO >= 20010901
-  PHP_STATA_VERSION,
-#endif
-  STANDARD_MODULE_PROPERTIES
-};
+/* Remove the following function when you have successfully modified config.m4
+   so that your module can be compiled into PHP, it exists only for testing
+   purposes. */
 
-#ifdef COMPILE_DL_STATA
-ZEND_GET_MODULE (stata)
-#endif
-  PHP_MINFO_FUNCTION (stata)
+/* Every user-visible function in PHP should document itself in the source */
+/* {{{ proto string confirm_stata_compiled(string arg)
+   Return a string to confirm that the module is compiled in */
+PHP_FUNCTION(confirm_stata_compiled)
 {
-  php_info_print_table_start ();
-  php_info_print_table_row (2, "version", PHP_STATA_VERSION);
-  php_info_print_table_row (2, "author", PHP_STATA_AUTHOR);
-  php_info_print_table_row (2, "homepage", "http://www.adrianmontero.info");
-  php_info_print_table_end ();
+	char *arg = NULL;
+	size_t arg_len, len;
+	zend_string *strg;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &arg, &arg_len) == FAILURE) {
+		return;
+	}
+
+	strg = strpprintf(0, "Congratulations! You have successfully modified ext/%.78s/config.m4. Module %.78s is now compiled into PHP.", "stata", arg);
+
+	RETURN_STR(strg);
 }
+/* }}} */
+/* The previous line is meant for vim and emacs, so it can correctly fold and
+   unfold functions in source code. See the corresponding marks just before
+   function definition, where the functions purpose is also documented. Please
+   follow this convention for the convenience of others editing your code.
+*/
+
+
+/* {{{ php_stata_init_globals
+ */
+/* Uncomment this function if you have INI entries
+static void php_stata_init_globals(zend_stata_globals *stata_globals)
+{
+	stata_globals->global_value = 0;
+	stata_globals->global_string = NULL;
+}
+*/
+/* }}} */
+
+/* {{{ PHP_MINIT_FUNCTION
+ */
+//PHP_MINIT_FUNCTION(stata)
+//{
+	/* If you have INI entries, uncomment these lines
+	REGISTER_INI_ENTRIES();
+	*/
+//	return SUCCESS;
+//}
+/* }}} */
+
+/* {{{ PHP_MSHUTDOWN_FUNCTION
+ */
+PHP_MSHUTDOWN_FUNCTION(stata)
+{
+	/* uncomment this line if you have INI entries
+	UNREGISTER_INI_ENTRIES();
+	*/
+	return SUCCESS;
+}
+/* }}} */
+
+/* Remove if there's nothing to do at request start */
+/* {{{ PHP_RINIT_FUNCTION
+ */
+PHP_RINIT_FUNCTION(stata)
+{
+#if defined(COMPILE_DL_STATA) && defined(ZTS)
+	ZEND_TSRMLS_CACHE_UPDATE();
+#endif
+	return SUCCESS;
+}
+/* }}} */
+
+/* Remove if there's nothing to do at request end */
+/* {{{ PHP_RSHUTDOWN_FUNCTION
+ */
+PHP_RSHUTDOWN_FUNCTION(stata)
+{
+	return SUCCESS;
+}
+/* }}} */
+
+/* {{{ PHP_MINFO_FUNCTION
+ */
+PHP_MINFO_FUNCTION(stata)
+{
+	php_info_print_table_start();
+	php_info_print_table_header(2, "stata support", "enabled");
+	php_info_print_table_row (2, "version", PHP_STATA_VERSION);
+  	php_info_print_table_row (2, "author", PHP_STATA_AUTHOR);
+  	php_info_print_table_row (2, "homepage", "http://www.adrianmontero.info");	
+	php_info_print_table_end();
+
+	/* Remove comments if you have entries in php.ini
+	DISPLAY_INI_ENTRIES();
+	*/
+}
+/* }}} */
+
+/* {{{ stata_functions[]
+ *
+ * Every user visible function must have an entry in stata_functions[].
+ */
+const zend_function_entry stata_functions[] = {
+  	PHP_FE (stata_open, NULL)
+    	PHP_FE (stata_observations, NULL)
+    	PHP_FE (stata_data, NULL)
+    	PHP_FE (stata_variables, NULL)
+   	PHP_FE (stata_nvariables, NULL)
+    	PHP_FE (stata_labels, NULL)
+    	PHP_FE (stata_close, NULL) 
+    	PHP_FE (stata_write, NULL)
+	//PHP_FE(confirm_stata_compiled,	NULL)		/* For testing, remove later. */
+	PHP_FE_END	/* Must be the last line in stata_functions[] */
+};
+/* }}} */
+
+/* {{{ stata_module_entry
+ */
+zend_module_entry stata_module_entry = {
+	STANDARD_MODULE_HEADER,
+	"stata",
+	stata_functions,
+	PHP_MINIT(stata),
+	PHP_MSHUTDOWN(stata),
+	PHP_RINIT(stata),		/* Replace with NULL if there's nothing to do at request start */
+	PHP_RSHUTDOWN(stata),	/* Replace with NULL if there's nothing to do at request end */
+	PHP_MINFO(stata),
+	PHP_STATA_VERSION,
+	STANDARD_MODULE_PROPERTIES
+};
+/* }}} */
+
 
 PHP_MINIT_FUNCTION (stata)
 {
   le_stata_file =
     zend_register_list_destructors_ex (NULL, NULL, PHP_STATA_FILE_RES_NAME,
 				       module_number);
-}
 
+}
 
 // implementation of a custom my_function()
 PHP_FUNCTION (stata_open)
@@ -102,13 +209,15 @@ PHP_FUNCTION (stata_open)
 
   if (dta != NULL)
   {
-  	ZEND_REGISTER_RESOURCE (return_value, dta, le_stata_file);
+  	RETURN_RES(zend_register_resource(dta, le_stata_file));
   }
   else
   {
         RETURN_NULL();
   }
 }
+
+
 
 PHP_FUNCTION (stata_nvariables)
 {
@@ -122,8 +231,9 @@ PHP_FUNCTION (stata_nvariables)
       RETURN_NULL ();
     }
 
-  ZEND_FETCH_RESOURCE (dta, struct StataDataFile *, &stataData, -1,
-		       PHP_STATA_FILE_RES_NAME, le_stata_file);
+
+    dta = (struct StataDataFile *) zend_fetch_resource(Z_RES_P(stataData), PHP_STATA_FILE_RES_NAME, le_stata_file);
+
 
   if (dta && dta->nvar > 0)
     {
@@ -137,7 +247,6 @@ PHP_FUNCTION (stata_nvariables)
 
 }
 
-
 PHP_FUNCTION (stata_close)
 {
   struct StataDataFile *dta = NULL;
@@ -150,8 +259,9 @@ PHP_FUNCTION (stata_close)
       RETURN_NULL ();
     }
 
-  ZEND_FETCH_RESOURCE (dta, struct StataDataFile *, &stataData, -1,
-		       PHP_STATA_FILE_RES_NAME, le_stata_file);
+
+    dta = (struct StataDataFile *) zend_fetch_resource(Z_RES_P(stataData), PHP_STATA_FILE_RES_NAME, le_stata_file);
+
 
   if (dta != NULL)
   {
@@ -162,6 +272,7 @@ PHP_FUNCTION (stata_close)
         RETURN_BOOL(0);
 
 }
+
 
 PHP_FUNCTION (stata_observations)
 {
@@ -175,8 +286,7 @@ PHP_FUNCTION (stata_observations)
       RETURN_NULL ();
     }
 
-  ZEND_FETCH_RESOURCE (dta, struct StataDataFile *, &stataData, -1,
-		       PHP_STATA_FILE_RES_NAME, le_stata_file);
+    dta = (struct StataDataFile *) zend_fetch_resource(Z_RES_P(stataData), PHP_STATA_FILE_RES_NAME, le_stata_file);
 
   if (dta && dta->nobs > 0)
     {
@@ -204,9 +314,9 @@ PHP_FUNCTION (stata_variables)
     }
 
  
+    dta = (struct StataDataFile *) zend_fetch_resource(Z_RES_P(stataData), PHP_STATA_FILE_RES_NAME, le_stata_file);
 
-  ZEND_FETCH_RESOURCE (dta, struct StataDataFile *, &stataData, -1,
-		       PHP_STATA_FILE_RES_NAME, le_stata_file);
+
 
   if (dta == NULL)
 	RETURN_NULL();
@@ -219,15 +329,14 @@ PHP_FUNCTION (stata_variables)
 
   for (i = 0; i < dta->nvar; i++)
     {
-      ALLOC_INIT_ZVAL (innerarray[i]);
       array_init (innerarray[i]);
     }
 
   for (stv = dta->variables; stv; stv = stv->next, count++)
     {
-      add_assoc_string (innerarray[count], "vlabels", stv->vlabels, 1);
-      add_assoc_string (innerarray[count], "dlabels", stv->dlabels, 1);
-      add_assoc_string (innerarray[count], "vfmt", stv->vfmt, 1);
+      add_assoc_string (innerarray[count], "vlabels", stv->vlabels);
+      add_assoc_string (innerarray[count], "dlabels", stv->dlabels);
+      add_assoc_string (innerarray[count], "vfmt", stv->vfmt);
       add_assoc_long(innerarray[count], "valueType", stv->valueType);
       add_assoc_zval (return_value, stv->name, innerarray[count]);
     }
@@ -236,6 +345,7 @@ PHP_FUNCTION (stata_variables)
 
 
 }
+
 
 PHP_FUNCTION (stata_labels)
 {
@@ -252,8 +362,7 @@ PHP_FUNCTION (stata_labels)
       RETURN_NULL ();
     }
 
-  ZEND_FETCH_RESOURCE (dta, struct StataDataFile *, &stataData, -1,
-		       PHP_STATA_FILE_RES_NAME, le_stata_file);
+    dta = (struct StataDataFile *) zend_fetch_resource(Z_RES_P(stataData), PHP_STATA_FILE_RES_NAME, le_stata_file);
 
   if (dta == NULL)
     RETURN_NULL();
@@ -265,14 +374,12 @@ PHP_FUNCTION (stata_labels)
   buff[0] = 0;
   currName[0] = 0;
 
-  ALLOC_INIT_ZVAL (innertable);
   array_init (innertable);
 
   zval **innerarray = emalloc (sizeof (zval *) * dta->nlabels);
 
   for (i = 0; i < dta->nlabels; i++)
     {
-      ALLOC_INIT_ZVAL (innerarray[i]);
       array_init (innerarray[i]);
     }
 
@@ -284,20 +391,20 @@ PHP_FUNCTION (stata_labels)
 	{
 	  strcpy (currName, stl->name);
 	  sprintf (buff, "%d", stl->value);
-	  add_assoc_string (innerarray[0], buff, stl->string, 1);
+	  add_assoc_string (innerarray[0], buff, stl->string);
 	}
       else
 	{
 	  if (!strcmp (currName, stl->name))
 	    {
 	      sprintf (buff, "%d", stl->value);
-	      add_assoc_string (innerarray[count], buff, stl->string, 1);
+	      add_assoc_string (innerarray[count], buff, stl->string);
 	      strcpy (currName, stl->name);
 
 	      if (count == dta->nlabels - 1)
 		{
 		  sprintf (buff, "%d", stl->value);
-		  add_assoc_string (innerarray[count], buff, stl->string, 1);
+		  add_assoc_string (innerarray[count], buff, stl->string);
 		  finishup = 1;
 		}
 
@@ -308,7 +415,7 @@ PHP_FUNCTION (stata_labels)
 	      count++;
 	      strcpy (currName, stl->name);
 	      sprintf (buff, "%d", stl->value);
-	      add_assoc_string (innerarray[count], buff, stl->string, 1);
+	      add_assoc_string (innerarray[count], buff, stl->string);
 
 	    }
 	}
@@ -351,7 +458,8 @@ PHP_FUNCTION (stata_data)
     }
 
 
-  ZEND_FETCH_RESOURCE (dta, struct StataDataFile *, &stataData, -1, PHP_STATA_FILE_RES_NAME, le_stata_file);
+    dta = (struct StataDataFile *) zend_fetch_resource(Z_RES_P(stataData), PHP_STATA_FILE_RES_NAME, le_stata_file);
+
 
   if (dta == NULL)
     RETURN_NULL();
@@ -360,7 +468,6 @@ PHP_FUNCTION (stata_data)
   vararray = emalloc(sizeof(zval*) * dta->nobs);
 
 
-  ALLOC_INIT_ZVAL(table);
   array_init(table);
 
   obs = dta->observations;
@@ -369,7 +476,6 @@ PHP_FUNCTION (stata_data)
        obs = obs->next, counterObs++)
     {
 
-      ALLOC_INIT_ZVAL(vararray[counterObs]);
       array_init(vararray[counterObs]);       
 
      	
@@ -396,7 +502,7 @@ PHP_FUNCTION (stata_data)
 	    default:
 	      if (stv->valueType > 244)
 		zend_error (E_ERROR,"unknown data type");
-	      add_assoc_string (vararray[counterObs], stv->name, obd->value.string, 1);
+	      add_assoc_string (vararray[counterObs], stv->name, obd->value.string);
 	      break;
 	    }
 
@@ -417,7 +523,7 @@ PHP_FUNCTION(stata_write)
 {
     zval *labels, *data, *variables, **entry;
     char *fname;
-    int str_len; 
+    size_t str_len; 
     int i;
 
     if (zend_parse_parameters (ZEND_NUM_ARGS ()TSRMLS_CC, "saaa", &fname, &str_len, &data, &variables, &labels) == FAILURE)
@@ -425,14 +531,49 @@ PHP_FUNCTION(stata_write)
       RETURN_NULL ();
     }
 
+    zend_string * str_labels = zend_string_init("labels", sizeof("labels") - 1, 0);
+    HashTable * ht_labels = Z_ARRVAL_P(labels);
 
-    if (zend_hash_exists(Z_ARRVAL_P(labels), "labels", sizeof("labels"))) {
-          zval **innerLabels;
-	  zval **vlabels;
+
+    if (zend_hash_exists(ht_labels, str_labels)) {
+	  zval *vlabels;
 	  HashPosition position;
-          zend_hash_find(Z_ARRVAL_P(labels), "labels", sizeof("labels"), (void **)&innerLabels);
+          zval * innerLabels = zend_hash_str_find(ht_labels, "labels", sizeof("labels") - 1);
+	  HashTable * ht_innerLabels = Z_ARRVAL_P(innerLabels);
 
-          for (zend_hash_internal_pointer_reset_ex(Z_ARRVAL_PP(innerLabels), &position); 
+          ZEND_HASH_FOREACH_PTR(ht_innerLabels, vlabels) {
+
+		  if (Z_TYPE_P(vlabels) == IS_ARRAY) {
+			HashPosition pointer;
+                        char *key;
+                        uint key_type;
+                        long index;
+
+			size_t key_len;
+			zend_string * key_zs;
+ 			HashTable * ht_vlabels = Z_ARRVAL_P(vlabels);
+                        key_type = zend_hash_get_current_key_ex(ht_vlabels, &key_zs, &index, &position);
+ 
+                        switch (key_type) {
+                              case HASH_KEY_IS_STRING:
+                              // associative array keys
+                              //php_printf("key: %s<br>", key);
+                              break;
+                              case HASH_KEY_IS_LONG:
+                              // numeric indexes
+                              //php_printf("index: %ld<br>", index);
+                              break;
+                             default:
+                              break;
+                       }
+
+	
+		  }		
+
+	  }
+          ZEND_HASH_FOREACH_END();
+
+/*          for (zend_hash_internal_pointer_reset_ex(Z_ARRVAL_PP(innerLabels), &position); 
                               zend_hash_get_current_data_ex((*innerLabels)->value.ht, (void**) &vlabels, &position) == SUCCESS;
                                 zend_hash_move_forward_ex((*innerLabels)->value.ht, &position)) {
 
@@ -463,7 +604,7 @@ PHP_FUNCTION(stata_write)
 				
     
 
-	  }
+	  } */
            
     }
 
@@ -473,3 +614,20 @@ PHP_FUNCTION(stata_write)
     do_writeStata(fname, data, variables, labels);
 
 }
+
+
+#ifdef COMPILE_DL_STATA
+#ifdef ZTS
+ZEND_TSRMLS_CACHE_DEFINE()
+#endif
+ZEND_GET_MODULE(stata)
+#endif
+
+/*
+ * Local variables:
+ * tab-width: 4
+ * c-basic-offset: 4
+ * End:
+ * vim600: noet sw=4 ts=4 fdm=marker
+ * vim<600: noet sw=4 ts=4
+ */
