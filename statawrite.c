@@ -105,18 +105,18 @@ static char* nameMangleOut(char *stataname, int len)
  * written out as 1,2,3, ...
  */
 static int 
-writeStataValueLabel(const char *labelName, zval ** theselabels,
+writeStataValueLabel(const char *labelName, zval * theselabels,
 		     int theselevels, const int namelength, FILE *fp)
 {
    int i = 0, txtlen = 0; 
    size_t len = 0;
-   len = 4*2*(zend_hash_num_elements(Z_ARRVAL_PP(theselabels)) + 1);
+   len = 4*2*(zend_hash_num_elements(Z_ARRVAL_P(theselabels)) + 1);
    txtlen = 0;
    HashPosition labelposition;
    HashPosition labelposition2;
    zval ** currentLabel;
 
-   for (zend_hash_internal_pointer_reset_ex(Z_ARRVAL_PP(theselabels), &labelposition), i=0;
+   for (zend_hash_internal_pointer_reset_ex(Z_ARRVAL_P(theselabels), &labelposition), i=0;
                             zend_hash_get_current_data_ex(Z_ARRVAL_PP(theselabels), (void**) &currentLabel, &labelposition) == SUCCESS;
                                      zend_hash_move_forward_ex(Z_ARRVAL_PP(theselabels), &labelposition), i++) {
 		zend_error(E_NOTICE, "type: %d , len: %d", Z_TYPE_PP(currentLabel), Z_STRLEN_PP(currentLabel));	
@@ -173,12 +173,6 @@ writeStataValueLabel(const char *labelName, zval ** theselabels,
 		OutIntegerBinary(index, fp, 0);
         }
 
-//	}
-//	else{
-//		for (i = 0; i < length(theselevels); i++)
-//		    OutIntegerBinary((int) REAL(theselevels)[i], fp, 0);
-//	}
-//  } 
 /* the actual labels */
 
         for (zend_hash_internal_pointer_reset_ex(Z_ARRVAL_PP(theselabels), &labelposition), i=0;
@@ -284,49 +278,6 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
     timestamp[17] = 0;
     OutStringBinary(timestamp, fp, 18);   /* file creation time - zero terminated string */
 
-    /** write variable descriptors **/
-
-    /** types **/
-    /* FIXME: writes everything as double or integer to save effort*/
-    /*  we should honor the "Csingle" attribute and also write logicals as
-	byte rather than long */
-
-/***    PROTECT(types = allocVector(INTSXP, nvar));
-    if (version <= 7) {
-	for(i = 0;i < nvar; i++){
-	    switch(TYPEOF(VECTOR_ELT(df, i))){
-	    case LGLSXP:
-		OutByteBinary(STATA_BYTE, fp);
-		break;
-	    case INTSXP:
-		OutByteBinary(STATA_INT, fp);
-		break;
-	    case REALSXP:
-		OutByteBinary(STATA_DOUBLE, fp);
-		break;
-	    case STRSXP:
-
-***/
-		/* NB: there is a 244 byte limit on strings */
-/***		charlen = 0;
-		for(j = 0; j < nobs; j++){
-		    k = (int) strlen(CHAR(STRING_ELT(VECTOR_ELT(df, i), j)));
-		    if (k > charlen) charlen = k;
-		}
-		if(charlen > 244)
-		    warning("character strings of >244 bytes in column %d will be truncated", i+1);
-		charlen =  (charlen < 244) ? charlen : 244;
-		OutByteBinary((unsigned char)(charlen+STATA_STRINGOFFSET), fp);
-		INTEGER(types)[i] = charlen;
-		break;
-	    default:
-		error(_("unknown data type"));
-		break;
-	    }
-	}
-
-    } else {
-***/
 
         HashPosition position_vars;
 	zval **variable_traverse;
@@ -494,23 +445,6 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
 			 }
 	}
 
- /* no label */
-
-
-     /* label */
-            //If we remember what the value label was called, use that. Otherwise use the var name
-/*	    if(!isNull(curr_val_labels) && isString(curr_val_labels) 
-	       && LENGTH(curr_val_labels) > i)
-	    	strncpy(aname, CHAR(STRING_ELT(curr_val_labels, i)), namelength);
-	    else
-		strncpy(aname, CHAR(STRING_ELT(names, i)), namelength);
-	    OutStringBinary(nameMangleOut(aname, namelength), fp, namelength);
-	    OutByteBinary(0, fp);*/
-
-    /** Variable Labels -- Uses "var.labels" attribute
-	if is a string vector of the right length, otherwise the
-	the variable name (FIXME: this is now just the same abbreviated name) **/
-  
   memset(datalabel, 0, 81); 
 
   for (zend_hash_internal_pointer_reset_ex(Z_ARRVAL_P(vars), &position_vars), i=0;
@@ -545,34 +479,6 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
                                   OutStringBinary(datalabel, fp, 81);
                          }
         }
-
-
-    /** Expansion fields. Only existing ones are type-1 fields (first byte is 1).
-	This includes dataset/variables characteristics, multilingual data (dataset/variable labels, 
-	value label attachments, language list), and notes. 
-	Don't have documentation for pre-version7 format (are the first two fields still 33 bytes?) **/
-
-
-   /* if(!isNull(exp_fields) && TYPEOF(exp_fields) == VECSXP && abs(version) >= 7){
-	for(i = 0; i< LENGTH(exp_fields); i++) {
-	    char tmp[namelength];
-	    PROTECT(exp_field = VECTOR_ELT(exp_fields, i));	
-	    if(!isNull(exp_field) && isString(exp_field) && LENGTH(exp_field) == 3) {
-		OutByteBinary(1, fp);
-		OutIntegerBinary(2*(namelength+1) + (length(STRING_ELT(exp_field,2))+1), fp, 1);
-		memset(tmp, 0, namelength);
-		strncpy(tmp, CHAR(STRING_ELT(exp_field, 0)), namelength);
-		OutStringBinary(tmp, fp, namelength);
-		OutByteBinary(0, fp);
-		memset(tmp, 0, namelength);
-		strncpy(tmp, CHAR(STRING_ELT(exp_field, 1)), namelength);
-		OutStringBinary(tmp, fp, namelength);
-		OutByteBinary(0, fp);
-		OutStringBinary(CHAR(STRING_ELT(exp_field, 2)), fp, length(STRING_ELT(exp_field, 2)));
-		OutByteBinary(0, fp);
-	    }
-	}
-    } */
 
     //The last block is always zeros
     OutByteBinary(0, fp);
@@ -675,12 +581,29 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
     }
     
 
-    /** value labels: pp92-94 of 'Programming' manual in v7.0 **/
-    //PROTECT(curr_val_labels = getAttrib(df, install("val.labels")));
     HashPosition valuePosition;
-    zval ** value_labels; 
-    zval ** inner_labels;
-    zend_hash_find(Z_ARRVAL_P(labels), "labels", sizeof("labels"), (void **)&value_labels);
+    zval * value_labels; 
+    zval * inner_labels;
+
+    HashTable * ht_labels = Z_ARRVAL_P(labels); 
+
+    value_labels = zend_hash_str_find(ht_labels, "labels", sizeof("labels") - 1);
+
+    HashTable * ht_vlabels = Z_ARRVAL_P(value_labels);
+
+    ZEND_HASH_FOREACH_PTR(ht_vlabels, inner_labels)
+    {
+	uint key_type;
+	char *keyStr;
+	uint key_len, key_type;
+       
+	HashTable * ht_inner_labels = Z_ARRVAL(inner_labels);
+	zend_string * key_str; 
+	key_type = zend_has_get_current_key_ex(inner_labels, key_str, &index, &valuePosition);
+	//strncpy(aname, keyStr, kl	
+	
+    }
+    ZEND_HASH_FOREACH_END();
 
     for (zend_hash_internal_pointer_reset_ex(Z_ARRVAL_PP(value_labels), &valuePosition);
         zend_hash_get_current_data_ex(Z_ARRVAL_PP(value_labels), (void**) &inner_labels, &valuePosition) == SUCCESS;
@@ -691,54 +614,11 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
         long index;
         int k;
 
-        key_type = zend_hash_get_current_key_ex(Z_ARRVAL_PP(value_labels), &keyStr, &key_len, &index, 0, &valuePosition);
+        key_type = zend_hash_get_current_key_ex(Z_ARRVAL_P(value_labels), &keyStr, &key_len, &index, 0, &valuePosition);
 	strncpy(aname, keyStr, namelength);
 // 	printf("count: %s %d\n\r", keyStr, zend_hash_num_elements(Z_ARRVAL_PP(inner_labels)));
         writeStataValueLabel(aname, inner_labels, 0, namelength, fp);
     }
-
-    //for(i = 0;i < nvar; i++){
-//	theselabels = VECTOR_ELT(leveltable, i);
-//	if (!isNull(theselabels)){
-            //If we remember what the value label was called, use that. Otherwise use the var name
-//	    if(!isNull(curr_val_labels) && isString(curr_val_labels) && LENGTH(curr_val_labels) > i)
-//	    	strncpy(aname, CHAR(STRING_ELT(curr_val_labels, i)), namelength);
-//	    else
-//		strncpy(aname, CHAR(STRING_ELT(names, i)), namelength);
-
-//	    writeStataValueLabel(aname, theselabels, R_NilValue, namelength, fp);
-//	}
-  //  }
-
-/***
-    PROTECT(label_table = getAttrib(df, install("label.table")));
-    if(TYPEOF(label_table) == VECSXP){
-	PROTECT(names_lt = getAttrib(label_table, R_NamesSymbol));
-	if(!isNull(names_lt) && LENGTH(label_table) == LENGTH(names_lt)){
-		for(i=0; i<LENGTH(label_table); i++){
-			thisnamechar = CHAR(STRING_ELT(names_lt, i));
-			//check it this label was noted in val.labels because it would've been already written
-			if(!isNull(curr_val_labels) && isString(curr_val_labels)){
-				for(j=0; j<LENGTH(curr_val_labels); j++){
-					if(strncmp(thisnamechar, CHAR(STRING_ELT(curr_val_labels, j)), namelength) == 0)
-						break;
-				}
-				if(j<LENGTH(curr_val_labels)) continue;
-			}
-			//check to 
-			theselabelslevels = VECTOR_ELT(label_table, i);
-			if(!isNull(theselabelslevels)){
-				PROTECT(theselabels = getAttrib(theselabelslevels, R_NamesSymbol));
-				writeStataValueLabel(thisnamechar, theselabels, theselabelslevels, namelength, fp);
-				UNPROTECT(1); ***/
-                                /* theselabel */
-/***			}
-		}
-	}
-	UNPROTECT(1); ***/  /* names_lt */
-/***    }
-
-    UNPROTECT(4); ***/ /* names,types,curr_val_labels, label_table */
 
 
     for (i=0; i < nvar; i++)
