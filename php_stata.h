@@ -37,12 +37,9 @@ PHP_FUNCTION(stata_data);
 PHP_FUNCTION(stata_labels);
 PHP_FUNCTION(stata_close);
 PHP_FUNCTION(stata_write);
+PHP_FUNCTION(confirm_stata_compiled);
 PHP_MINFO_FUNCTION(stata);
 
-
-struct StataDataFile * do_readStata(char * fileName);
-int do_stataClose(struct StataDataFile * dta);
-void do_writeStata(char *fileName, zval *data, zval *variables, zval *labels);
 
 #ifdef PHP_WIN32
 #	define PHP_STATA_API __declspec(dllexport)

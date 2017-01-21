@@ -116,12 +116,15 @@ writeStataValueLabel(const char *labelName, zval * theselabels,
    HashPosition labelposition2;
    zval ** currentLabel;
 
+/****
    for (zend_hash_internal_pointer_reset_ex(Z_ARRVAL_P(theselabels), &labelposition), i=0;
                             zend_hash_get_current_data_ex(Z_ARRVAL_PP(theselabels), (void**) &currentLabel, &labelposition) == SUCCESS;
                                      zend_hash_move_forward_ex(Z_ARRVAL_PP(theselabels), &labelposition), i++) {
 		zend_error(E_NOTICE, "type: %d , len: %d", Z_TYPE_PP(currentLabel), Z_STRLEN_PP(currentLabel));	
 	        txtlen += Z_STRLEN_PP(currentLabel) + 1;
    }
+
+****/
    
    len += txtlen;
    OutIntegerBinary((int)len, fp, 0); 
@@ -136,11 +139,12 @@ writeStataValueLabel(const char *labelName, zval * theselabels,
     OutByteBinary(0, fp); 
     OutByteBinary(0, fp);
  /*padding*/
-    OutIntegerBinary(zend_hash_num_elements(Z_ARRVAL_PP(theselabels)), fp, 0);
+    OutIntegerBinary(zend_hash_num_elements(Z_ARRVAL_P(theselabels)), fp, 0);
     OutIntegerBinary(txtlen, fp, 0);
  /* offsets */
     len = 0;
    
+/****
     for (zend_hash_internal_pointer_reset_ex(Z_ARRVAL_PP(theselabels), &labelposition), i=0;
                             zend_hash_get_current_data_ex(Z_ARRVAL_PP(theselabels), (void**) &currentLabel, &labelposition) == SUCCESS;
                                      zend_hash_move_forward_ex(Z_ARRVAL_PP(theselabels), &labelposition), i++) {
@@ -151,14 +155,8 @@ writeStataValueLabel(const char *labelName, zval * theselabels,
         zend_error(E_NOTICE, "%s %d", Z_STRVAL_PP(currentLabel), Z_STRLEN_PP(currentLabel));
 	len += Z_STRLEN_PP(currentLabel) + 1;
     }
-   /* values: just 1,2,3,...*/
+   // values: just 1,2,3,...
     
-   //if(isNull(theselevels)){
-   //	for (i = 0; i < length(theselabels); i++)
-   //	    OutIntegerBinary(i+1, fp, 0);
-   // }
-   // else{
-   //	if(TYPEOF(theselevels) == INTSXP){
        for (zend_hash_internal_pointer_reset_ex(Z_ARRVAL_PP(theselabels), &labelposition), i=0;
                             zend_hash_get_current_data_ex(Z_ARRVAL_PP(theselabels), (void**) &currentLabel, &labelposition) == SUCCESS;
                                      zend_hash_move_forward_ex(Z_ARRVAL_PP(theselabels), &labelposition), i++) {
@@ -173,8 +171,11 @@ writeStataValueLabel(const char *labelName, zval * theselabels,
 		OutIntegerBinary(index, fp, 0);
         }
 
-/* the actual labels */
+****/
 
+// the actual labels 
+
+/****
         for (zend_hash_internal_pointer_reset_ex(Z_ARRVAL_PP(theselabels), &labelposition), i=0;
                             zend_hash_get_current_data_ex(Z_ARRVAL_PP(theselabels), (void**) &currentLabel, &labelposition) == SUCCESS;
                                      zend_hash_move_forward_ex(Z_ARRVAL_PP(theselabels), &labelposition), i++) {
@@ -189,7 +190,8 @@ writeStataValueLabel(const char *labelName, zval * theselabels,
                 zend_error(E_WARNING, "this should happen: overrun");
 
          }
-    
+
+****/    
     if (txtlen > 0) 
 	zend_error(E_WARNING, "this should happen: underrun");
 
@@ -206,13 +208,9 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
     char format9g[50] = "%9.0g", strformat[50] = "";
     const char *thisnamechar;
 
-    zval ** data_inner;
+    zval * data_inner;
     zval ** variables_inner;
 
- /*   SEXP names, types, theselabels, orig_names, vlabels, dlabel, 
-	exp_fields, exp_field, curr_val_labels, label_table, names_lt,
-	theselabelslevels;
-*/
     int namelength = 8;
     int fmtlist_len = 12;
 
@@ -237,10 +235,14 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
  
 
     nvar = zend_hash_num_elements(Z_ARRVAL_P(vars));
+    printf("number of variables: %d\n\r", nvar);
+    HashTable * ht_data = Z_ARRVAL_P(data);
 
+    zend_string * str_data = zend_string_init("data",  sizeof("data") -1 , 0);
+    data_inner = zend_hash_find(ht_data, str_data);
+	
 
-    zend_hash_find(Z_ARRVAL_P(data), "data", sizeof("data"), (void **)&data_inner);
-    nobs = zend_hash_num_elements(Z_ARRVAL_PP(data_inner)); 
+    nobs = zend_hash_num_elements(Z_ARRVAL_P(data_inner)); 
 
     zend_error(E_NOTICE, "Observations: %d", nobs);
     zend_error(E_NOTICE, "Variables: %d", nvar);
@@ -248,7 +250,7 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
     OutShortIntBinary(nvar, fp);
     OutIntegerBinary(nobs, fp, 1);
 
-
+/****
     int ** types = ecalloc(nvar, sizeof(int*));
     int ** wrTypes = ecalloc(nvar, sizeof(int*));
 
@@ -259,7 +261,7 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
 	*(types[i]) = -1;
     }
 
-    
+****/    
 	
 
   /* number of cases */
@@ -278,7 +280,7 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
     timestamp[17] = 0;
     OutStringBinary(timestamp, fp, 18);   /* file creation time - zero terminated string */
 
-
+/****
         HashPosition position_vars;
 	zval **variable_traverse;
 	
@@ -287,8 +289,12 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
 
 	HashPosition position_internal_vars;
 	zval **internal_traverse;
+
+****/
+
 	/* version 8, 10 */
 
+/****
         for (zend_hash_internal_pointer_reset_ex(Z_ARRVAL_P(vars), &position_vars), i=0;
                    zend_hash_get_current_data_ex(Z_ARRVAL_P(vars), (void**) &variable_traverse, &position_vars) == SUCCESS; 
 			 zend_hash_move_forward_ex(Z_ARRVAL_P(vars), &position_vars), i++) {
@@ -364,9 +370,15 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
 	}
 
 
+****/
+
 /** names truncated to 8 (or 32 for v>=7) characters**/
 
 //    for (i = 0; i < nvar;i ++){
+
+
+
+/****
      for (zend_hash_internal_pointer_reset_ex(Z_ARRVAL_P(vars), &position_vars), i=0;
                    zend_hash_get_current_data_ex(Z_ARRVAL_P(vars), (void**) &variable_traverse, &position_vars) == SUCCESS, i < nvar;
                          zend_hash_move_forward_ex(Z_ARRVAL_P(vars), &position_vars), i++) {
@@ -381,6 +393,10 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
 		OutStringBinary(nameMangleOut(aname, namelength), fp, namelength);
 		OutByteBinary(0, fp);
 	}
+
+****/
+
+
 //    }
 
     /** sortlist -- not relevant **/
@@ -394,12 +410,11 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
 	but strings need accurate types */
 
 
-
+/****
     for (i = 0; i < nvar; i++) {
 	if (*types[i] != -1){
 
-	    /* string types are at most 244 characters
-	       so we can't get a buffer overflow in sprintf **/
+	    // string types are at most 244 character so we can't get a buffer overflow in sprintf 
 	    memset(strformat, 0, 50);
 	    sprintf(strformat, "%%%ds", *types[i]);
 
@@ -409,10 +424,13 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
 	}
     }
 
+****/
+
     /** value labels.  These are stored as the names of label formats,
 	which are themselves stored later in the file.
 	The label format has the same name as the variable. **/
 
+/****
 
      for (zend_hash_internal_pointer_reset_ex(Z_ARRVAL_P(vars), &position_vars), i=0;
                    zend_hash_get_current_data_ex(Z_ARRVAL_P(vars), (void**) &variable_traverse, &position_vars) == SUCCESS, i < nvar;
@@ -432,13 +450,13 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
 
 			 if (Z_STRLEN_PP(vLabels) == 0)
 			 {
-				  /* no label */
+				  // no label 
 				  for(j = 0; j < namelength+1; j++)
 	                          OutByteBinary(0, fp);
 			 }
 			 else
 			 {	
-				/* label */ 
+				// label 
 				  strncpy(aname, Z_STRVAL_PP(vLabels), namelength);
                        		  OutStringBinary(nameMangleOut(aname, namelength), fp, namelength);
 				  OutByteBinary(0, fp);
@@ -465,7 +483,7 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
 
                          if (Z_STRLEN_PP(dLabels) == 0)
                          {
-                                  /* no label */
+                                  // no label 
 				  memset(datalabel, 0, 81);
 				  OutStringBinary(datalabel, fp, 81);
 
@@ -473,12 +491,16 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
                          }
                          else
                          {
-                                /* label */
+                                // label 
                                   strncpy(datalabel, Z_STRVAL_PP(dLabels), 81);
 				  datalabel[80] = 0;
                                   OutStringBinary(datalabel, fp, 81);
                          }
         }
+
+
+****/
+
 
     //The last block is always zeros
     OutByteBinary(0, fp);
@@ -494,7 +516,7 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
 
     /** The Data **/
 
-
+/****
    zend_hash_find(Z_ARRVAL_P(data), "data", sizeof("data"), (void **)&data_traverse);
    zval ** variables;
    zval ** observations;
@@ -536,12 +558,16 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
 				OutDoubleBinary(Z_DVAL_PP(variables), fp, 0);
 				zend_error(E_NOTICE, "IS DOUBLE %f", Z_DVAL_PP(variables));
 				break;
+****/
+
 /*
 			case IS_BOOL:
 				//printf("IS BOOL %s\n\r", Z_LVAL_PP(variables) ? "TRUE" : "FALSE");
 				OutDataByteBinary(Z_LVAL_PP(variables), fp);
 				break;
 */
+
+/****
 			case IS_STRING:
 				zend_error(E_NOTICE, "IS STRING %s %d", Z_STRVAL_PP(variables), Z_STRLEN_PP(variables));
 				k = Z_STRLEN_PP(variables);
@@ -620,7 +646,6 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
         writeStataValueLabel(aname, inner_labels, 0, namelength, fp);
     }
 
-
     for (i=0; i < nvar; i++)
     {
         efree(types[i]);
@@ -629,7 +654,7 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
     efree(types);
     efree(wrTypes);
 
-
+****/
 
 }
 

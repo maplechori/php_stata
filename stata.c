@@ -28,6 +28,11 @@
 #include "stataread.h"
 #include "php_stata.h"
 
+struct StataDataFile * do_readStata(char * fileName);
+int do_stataClose(struct StataDataFile * dta);
+void do_writeStata(char *fileName, zval *data, zval *variables, zval *labels);
+
+
 /* If you declare any globals in php_stata.h uncomment this:
 ZEND_DECLARE_MODULE_GLOBALS(stata)
 */
@@ -64,7 +69,7 @@ PHP_FUNCTION(confirm_stata_compiled)
 		return;
 	}
 
-	strg = strpprintf(0, "Congratulations! You have successfully modified ext/%.78s/config.m4. Module %.78s is now compiled into PHP.", "stata", arg);
+	strg = strpprintf(0, "PHP STATA You have successfully modified ext/%.78s/config.m4. Module %.78s is now compiled into PHP.", "stata", arg);
 
 	RETURN_STR(strg);
 }
@@ -89,22 +94,13 @@ static void php_stata_init_globals(zend_stata_globals *stata_globals)
 
 /* {{{ PHP_MINIT_FUNCTION
  */
-//PHP_MINIT_FUNCTION(stata)
-//{
-	/* If you have INI entries, uncomment these lines
-	REGISTER_INI_ENTRIES();
-	*/
-//	return SUCCESS;
-//}
 /* }}} */
 
 /* {{{ PHP_MSHUTDOWN_FUNCTION
  */
 PHP_MSHUTDOWN_FUNCTION(stata)
 {
-	/* uncomment this line if you have INI entries
-	UNREGISTER_INI_ENTRIES();
-	*/
+//	UNREGISTER_INI_ENTRIES();
 	return SUCCESS;
 }
 /* }}} */
@@ -147,50 +143,19 @@ PHP_MINFO_FUNCTION(stata)
 }
 /* }}} */
 
-/* {{{ stata_functions[]
- *
- * Every user visible function must have an entry in stata_functions[].
- */
-const zend_function_entry stata_functions[] = {
-  	PHP_FE (stata_open, NULL)
-    	PHP_FE (stata_observations, NULL)
-    	PHP_FE (stata_data, NULL)
-    	PHP_FE (stata_variables, NULL)
-   	PHP_FE (stata_nvariables, NULL)
-    	PHP_FE (stata_labels, NULL)
-    	PHP_FE (stata_close, NULL) 
-    	PHP_FE (stata_write, NULL)
-	//PHP_FE(confirm_stata_compiled,	NULL)		/* For testing, remove later. */
-	PHP_FE_END	/* Must be the last line in stata_functions[] */
-};
-/* }}} */
-
-/* {{{ stata_module_entry
- */
-zend_module_entry stata_module_entry = {
-	STANDARD_MODULE_HEADER,
-	"stata",
-	stata_functions,
-	PHP_MINIT(stata),
-	PHP_MSHUTDOWN(stata),
-	PHP_RINIT(stata),		/* Replace with NULL if there's nothing to do at request start */
-	PHP_RSHUTDOWN(stata),	/* Replace with NULL if there's nothing to do at request end */
-	PHP_MINFO(stata),
-	PHP_STATA_VERSION,
-	STANDARD_MODULE_PROPERTIES
-};
-/* }}} */
-
 
 PHP_MINIT_FUNCTION (stata)
 {
   le_stata_file =
     zend_register_list_destructors_ex (NULL, NULL, PHP_STATA_FILE_RES_NAME,
 				       module_number);
-
+	
+     return SUCCESS;
 }
 
 // implementation of a custom my_function()
+/* {{{ 
+*/
 PHP_FUNCTION (stata_open)
 {
   struct StataDataFile *dta;
@@ -216,7 +181,8 @@ PHP_FUNCTION (stata_open)
         RETURN_NULL();
   }
 }
-
+/* }}} 
+*/
 
 
 PHP_FUNCTION (stata_nvariables)
@@ -518,7 +484,8 @@ PHP_FUNCTION (stata_data)
 
 
 }
-
+/* 
+{{{ */
 PHP_FUNCTION(stata_write)
 {
     zval *labels, *data, *variables, **entry;
@@ -614,6 +581,41 @@ PHP_FUNCTION(stata_write)
     do_writeStata(fname, data, variables, labels);
 
 }
+/* }}} */
+
+/* {{{ stata_functions[]
+ *
+ * Every user visible function must have an entry in stata_functions[].
+ */
+const zend_function_entry stata_functions[] = {
+        PHP_FE(confirm_stata_compiled,  NULL)           /* For testing, remove later. */
+        PHP_FE(stata_open, NULL)
+        PHP_FE(stata_observations, NULL)
+        PHP_FE(stata_data, NULL)
+        PHP_FE(stata_variables, NULL)
+        PHP_FE(stata_nvariables, NULL)
+        PHP_FE(stata_labels, NULL)
+        PHP_FE(stata_close, NULL)
+        PHP_FE(stata_write, NULL)
+        PHP_FE_END      /* Must be the last line in stata_functions[] */
+};
+/* }}} */
+
+/* {{{ stata_module_entry
+ */
+zend_module_entry stata_module_entry = {
+        STANDARD_MODULE_HEADER,
+        "stata",
+        stata_functions,
+        PHP_MINIT(stata),
+        PHP_MSHUTDOWN(stata),
+        PHP_RINIT(stata),               /* Replace with NULL if there's nothing to do at request start */
+        PHP_RSHUTDOWN(stata),   /* Replace with NULL if there's nothing to do at request end */
+        PHP_MINFO(stata),
+        PHP_STATA_VERSION,
+        STANDARD_MODULE_PROPERTIES
+};
+/* }}} */
 
 
 #ifdef COMPILE_DL_STATA

@@ -59,5 +59,5 @@ if test "$PHP_STATA" != "no"; then
   dnl
   dnl PHP_SUBST(STATA_SHARED_LIBADD)
 
-  PHP_NEW_EXTENSION(stata, stata.c stataread.c statawrite.c, $ext_shared,, -DZEND_ENABLE_STATIC_TSRMLS_CACHE=1)
+  PHP_NEW_EXTENSION(stata, stataread.c statawrite.c stata.c, $ext_shared,, -DZEND_ENABLE_STATIC_TSRMLS_CACHE=1)
 fi
