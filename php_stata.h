@@ -37,7 +37,6 @@ PHP_FUNCTION(stata_data);
 PHP_FUNCTION(stata_labels);
 PHP_FUNCTION(stata_close);
 PHP_FUNCTION(stata_write);
-PHP_FUNCTION(confirm_stata_compiled);
 PHP_MINFO_FUNCTION(stata);
 
 

@@ -250,7 +250,8 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
     OutShortIntBinary(nvar, fp);
     OutIntegerBinary(nobs, fp, 1);
 
-/****
+    printf("number of observations: %d\n\r", nobs);
+
     int ** types = ecalloc(nvar, sizeof(int*));
     int ** wrTypes = ecalloc(nvar, sizeof(int*));
 
@@ -261,7 +262,6 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
 	*(types[i]) = -1;
     }
 
-****/    
 	
 
   /* number of cases */
@@ -280,20 +280,43 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
     timestamp[17] = 0;
     OutStringBinary(timestamp, fp, 18);   /* file creation time - zero terminated string */
 
-/****
-        HashPosition position_vars;
-	zval **variable_traverse;
+    HashPosition position_vars;
+    zval *variable_traverse;
 	
-	HashPosition position_data;
-        zval **data_traverse;
+    HashPosition position_data;
+    zval **data_traverse;
 
-	HashPosition position_internal_vars;
-	zval **internal_traverse;
+    HashPosition position_internal_vars;
+    zval **internal_traverse;
 
-****/
 
-	/* version 8, 10 */
+    /* version 8, 10 */
+    HashTable * ht_vars = Z_ARRVAL_P(vars);
+    i=0;
+    zend_string * str_vars = zend_string_init("valueType", sizeof("valueType") - 1, 0);
 
+    ZEND_HASH_FOREACH_STR_KEY_VAL(ht_vars, str_vars, variable_traverse) {
+
+	*wrTypes[i++] = Z_LVAL_P(variable_traverse);
+
+	printf("-->\n\r");
+
+
+	switch(Z_LVAL_P(variable_traverse)) {
+
+		case STATA_SE_BYTE:
+			printf("byte %ld\n\r", Z_LVAL_P(variable_traverse));
+                        //OutByteBinary(STATA_SE_BYTE, fp);
+
+			break;	
+
+	}
+ 	
+
+    }
+    ZEND_HASH_FOREACH_END();
+
+    printf("done\n\r");
 /****
         for (zend_hash_internal_pointer_reset_ex(Z_ARRVAL_P(vars), &position_vars), i=0;
                    zend_hash_get_current_data_ex(Z_ARRVAL_P(vars), (void**) &variable_traverse, &position_vars) == SUCCESS; 

@@ -588,7 +588,6 @@ PHP_FUNCTION(stata_write)
  * Every user visible function must have an entry in stata_functions[].
  */
 const zend_function_entry stata_functions[] = {
-        PHP_FE(confirm_stata_compiled,  NULL)           /* For testing, remove later. */
         PHP_FE(stata_open, NULL)
         PHP_FE(stata_observations, NULL)
         PHP_FE(stata_data, NULL)
