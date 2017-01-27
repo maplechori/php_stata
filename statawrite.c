@@ -206,10 +206,10 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
     char datalabel[81] = "Created by PHP Stata (Adrian Montero)",
 	timestamp[18], aname[33];
     char format9g[50] = "%9.0g", strformat[50] = "";
-    const char *thisnamechar;
+    //const char *thisnamechar;
 
     zval * data_inner;
-    zval ** variables_inner;
+    //zval * variables_inner;
 
     int namelength = 8;
     int fmtlist_len = 12;
@@ -232,16 +232,14 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
     OutByteBinary(1, fp);            /* filetype */
     OutByteBinary(0, fp);            /* padding */
 
- 
 
     nvar = zend_hash_num_elements(Z_ARRVAL_P(vars));
     printf("number of variables: %d\n\r", nvar);
     HashTable * ht_data = Z_ARRVAL_P(data);
 
-    zend_string * str_data = zend_string_init("data",  sizeof("data") -1 , 0);
+    zend_string * str_data = zend_string_init("data", sizeof("data") -1 , 0);
     data_inner = zend_hash_find(ht_data, str_data);
 	
-
     nobs = zend_hash_num_elements(Z_ARRVAL_P(data_inner)); 
 
     zend_error(E_NOTICE, "Observations: %d", nobs);
@@ -262,7 +260,6 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
 	*(types[i]) = -1;
     }
 
-	
 
   /* number of cases */
 
@@ -273,22 +270,18 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
     time (&rawtime);
     struct tm  *timeinfo = localtime (&rawtime);
 
-    //for(i = 0; i < 18; i++) 
-    //timestamp[i] = 0;
-    
+    memset(&timestamp, 0, 18);  
     strftime(timestamp, 18, "%d %b %Y %H:%M",timeinfo);
     timestamp[17] = 0;
     OutStringBinary(timestamp, fp, 18);   /* file creation time - zero terminated string */
 
-    HashPosition position_vars;
     zval *variable_traverse;
 	
-    HashPosition position_data;
-    zval **data_traverse;
+    //HashPosition position_data;
+    //zval *data_traverse;
 
-    HashPosition position_internal_vars;
-    zval **internal_traverse;
-
+    //HashPosition position_internal_vars;
+    //zval *internal_traverse;
 
     /* version 8, 10 */
     HashTable * ht_vars = Z_ARRVAL_P(vars);
@@ -297,108 +290,80 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
 
     ZEND_HASH_FOREACH_STR_KEY_VAL(ht_vars, str_vars, variable_traverse) {
 
-	*wrTypes[i++] = Z_LVAL_P(variable_traverse);
+	HashTable * ht_vtrav = Z_ARRVAL_P(variable_traverse);
+	
+	zval * valueType = zend_hash_str_find(ht_vtrav, "valueType", sizeof("valueType") - 1);
+	*wrTypes[i++] = Z_LVAL_P(valueType);	
 
-	printf("-->\n\r");
-
-
-	switch(Z_LVAL_P(variable_traverse)) {
+	switch(Z_LVAL_P(valueType)) {
 
 		case STATA_SE_BYTE:
-			printf("byte %ld\n\r", Z_LVAL_P(variable_traverse));
-                        //OutByteBinary(STATA_SE_BYTE, fp);
-
+			//printf("byte %ld\n\r", Z_LVAL_P(valueType));
+                        OutByteBinary(STATA_SE_BYTE, fp);
 			break;	
+		case STATA_SE_INT:
+			//printf("int %ld\n\r", Z_LVAL_P(valueType));
+			OutByteBinary(STATA_SE_INT, fp);
+			break;
+		case STATA_SE_SHORTINT:
+			//printf("short %ld\n\r", Z_LVAL_P(valueType));
+			OutByteBinary(STATA_SE_SHORTINT, fp);
+			break;
+		case STATA_SE_FLOAT:
+			OutByteBinary(STATA_SE_DOUBLE,fp);
+			//printf("float: %ld\n\r", Z_LVAL_P(valueType));
+			break;
+		case STATA_SE_DOUBLE:
+			OutByteBinary(STATA_SE_DOUBLE,fp);
+			//printf("double: %ld\n\r", Z_LVAL_P(valueType));
+			break;
+		default: 
+			charlen = 0;
 
+			zval * strSize;
+			long * num;
+
+		        ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(data_inner), num, strSize)
+			{
+			    HashTable * obs_hash_table = Z_ARRVAL_P(strSize);
+			    zval * obs_value = zend_hash_find(obs_hash_table, str_vars);
+
+		            k = Z_STRLEN_P(obs_value); 
+
+                	    if (k>charlen)
+                            {
+                               charlen=k;
+                               *types[i] = charlen;
+                            }
+
+			}
+			ZEND_HASH_FOREACH_END();
+			
+
+			if (charlen > 244)
+				zend_error(E_WARNING, "character strings of >244 byes in column %s will be truncated", "keyStr");
+
+			charlen = (charlen < 244 ) ? charlen : 244;			
+
+			if (charlen == 0)
+			{
+				charlen = 2;
+				*types[i] = charlen;
+			}
+
+			//printf("charlen: %d\n\r", charlen);
+
+			OutByteBinary((unsigned char)(charlen+STATA_SE_STRINGOFFSET), fp);
+			break;
+			
 	}
  	
 
     }
     ZEND_HASH_FOREACH_END();
 
-    printf("done\n\r");
-/****
-        for (zend_hash_internal_pointer_reset_ex(Z_ARRVAL_P(vars), &position_vars), i=0;
-                   zend_hash_get_current_data_ex(Z_ARRVAL_P(vars), (void**) &variable_traverse, &position_vars) == SUCCESS; 
-			 zend_hash_move_forward_ex(Z_ARRVAL_P(vars), &position_vars), i++) {
-			
-                         char *keyStr;
-                         uint key_len, key_type;
-                         long index;
-			 zval ** valueType;
-			 zend_hash_get_current_key_ex(Z_ARRVAL_PP(variable_traverse), &keyStr, &key_len, &index, 0, &position_vars);
-			 zend_hash_find(Z_ARRVAL_PP(variable_traverse), "valueType", sizeof("valueType"), (void **)&valueType);
-//			 printf("meh: %ld, %s\n\r", Z_LVAL_PP(valueType), keyStr);	
-			 *wrTypes[i] = Z_LVAL_PP(valueType);
-			 switch(Z_LVAL_PP(valueType))
-			 {
-				case STATA_SE_BYTE:
-			//		 printf("key: %s byte %ld\n\r", keyStr, Z_LVAL_PP(valueType));
-					 OutByteBinary(STATA_SE_BYTE, fp);
-			                 break;
-				case STATA_SE_INT:
-			//		 printf("key: %s int %ld\n\r", keyStr, Z_LVAL_PP(valueType));
- 		                         OutByteBinary(STATA_SE_INT, fp);
-					 break;
-				case STATA_SE_SHORTINT:
-					 //printf("key: %s shortint %ld\n\r", keyStr, Z_LVAL_PP(valueType));
-					 //OutByteBinary(STATA_SE_SHORTINT, fp);
-  					 OutByteBinary(STATA_SE_SHORTINT, fp);
-					 break;
-				case STATA_SE_FLOAT:
-			//		 printf("key: %s float %ld\n\r", keyStr, Z_LVAL_PP(valueType));
-					 OutByteBinary(STATA_SE_DOUBLE, fp);
-					 break;
-				case STATA_SE_DOUBLE:
-			//		 printf("key: %s double %ld\n\r", keyStr, Z_LVAL_PP(valueType));
-			                 OutByteBinary(STATA_SE_DOUBLE, fp);
-					 break;
-				default:
-					charlen = 0;
-			//		printf("key: %s other %ld\n\r", keyStr, Z_LVAL_PP(valueType));
-  			                zend_hash_find(Z_ARRVAL_P(data), "data", sizeof("data"), (void **)&data_traverse);
-					zval ** findSize;	
-					for (zend_hash_internal_pointer_reset_ex(Z_ARRVAL_PP(data_traverse), &position_data);
-				                   zend_hash_get_current_data_ex(Z_ARRVAL_PP(data_traverse), (void**) &findSize, &position_data) == SUCCESS;
-                    						     zend_hash_move_forward_ex(Z_ARRVAL_PP(data_traverse), &position_data)) {
-					
-							zval ** strSize;
-							zend_hash_find(Z_ARRVAL_PP(findSize), keyStr, key_len, (void **)&strSize);
-
-							k = Z_STRLEN_PP(strSize);
-							if (k > charlen)
-							{
-								charlen = k;
-								*types[i] = charlen;
-							}
-
-					}
-					
-					if (charlen > 244)
-						zend_error(E_WARNING, "character strings of >244 bytes in column %s will be truncated", keyStr);
-					
-					charlen = ( charlen < 244) ? charlen : 244;
-
-					
-
-					if (charlen == 0)
-					{
-						charlen = 2;
-						*types[i] = charlen;
-					}
-
-					OutByteBinary((unsigned char)(charlen+STATA_SE_STRINGOFFSET), fp);
-					break;
-			 }
-	}
-
-
-****/
 
 /** names truncated to 8 (or 32 for v>=7) characters**/
-
-//    for (i = 0; i < nvar;i ++){
-
 
 
 /****
@@ -419,8 +384,6 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
 
 ****/
 
-
-//    }
 
     /** sortlist -- not relevant **/
  
