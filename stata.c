@@ -17,7 +17,7 @@
 */
 
 /* $Id$ */
-
+ 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -62,7 +62,7 @@ PHP_INI_END()
 PHP_FUNCTION(confirm_stata_compiled)
 {
 	char *arg = NULL;
-	size_t arg_len, len;
+	size_t arg_len;
 	zend_string *strg;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &arg, &arg_len) == FAILURE) {
@@ -160,16 +160,13 @@ PHP_FUNCTION (stata_open)
 {
   struct StataDataFile *dta;
   char *name;
-  int name_len;
-
+  size_t name_len;
   if (zend_parse_parameters (ZEND_NUM_ARGS ()TSRMLS_CC, "s", &name, &name_len)
       == FAILURE)
     {
       RETURN_NULL ();
     }
-
   zend_error(E_NOTICE, "Opening stata file: %s", name);
-
   dta = do_readStata (name);
 
   if (dta != NULL)
@@ -269,43 +266,37 @@ PHP_FUNCTION (stata_variables)
   struct StataDataFile *dta = NULL;
   struct StataVariable *stv;
   zval *stataData;
-  zval *variables;
   zval **innerarray;
-  int i = 0;
+  int i = 0, count = 0;
 
-  if (zend_parse_parameters (ZEND_NUM_ARGS ()TSRMLS_CC, "r", &stataData) ==
-      FAILURE)
-    {
+  if (zend_parse_parameters (ZEND_NUM_ARGS ()TSRMLS_CC, "r", &stataData) == FAILURE)
+  {
       RETURN_NULL ();
-    }
+  }
 
- 
-    dta = (struct StataDataFile *) zend_fetch_resource(Z_RES_P(stataData), PHP_STATA_FILE_RES_NAME, le_stata_file);
-
-
+  dta = (struct StataDataFile *) zend_fetch_resource(Z_RES_P(stataData), PHP_STATA_FILE_RES_NAME, le_stata_file);
 
   if (dta == NULL)
 	RETURN_NULL();
 
-  array_init (return_value);
-  int count = 0;
+  array_init(return_value);
 
-
-  innerarray = emalloc (sizeof (zval *) * dta->nvar);
+  innerarray = emalloc (sizeof(zval *) *  (dta->nvar));
 
   for (i = 0; i < dta->nvar; i++)
-    {
-      array_init (innerarray[i]);
-    }
+  {
+      printf(">>>%d\n\r\n\r\n\r", i);
+      array_init(innerarray[i]);
+  }
 
   for (stv = dta->variables; stv; stv = stv->next, count++)
-    {
+  {
       add_assoc_string (innerarray[count], "vlabels", stv->vlabels);
       add_assoc_string (innerarray[count], "dlabels", stv->dlabels);
       add_assoc_string (innerarray[count], "vfmt", stv->vfmt);
       add_assoc_long(innerarray[count], "valueType", stv->valueType);
       add_assoc_zval (return_value, stv->name, innerarray[count]);
-    }
+  }
 
   efree (innerarray);
 
@@ -317,10 +308,9 @@ PHP_FUNCTION (stata_labels)
 {
   int i;
   struct StataDataFile *dta;
-  struct StataVariable *stv;
   struct StataLabel *stl;
-  zval *stataData;
-  zval *innertable;
+  zval *stataData = NULL;
+  zval *innertable = NULL;
 
   if (zend_parse_parameters (ZEND_NUM_ARGS ()TSRMLS_CC, "r", &stataData) ==
       FAILURE)
@@ -408,14 +398,10 @@ PHP_FUNCTION (stata_data)
   struct StataObservation *obs;
   struct StataObservationData *obd;
   struct StataVariable *stv;
-  zval *stataData, **vararray, *table;
+  zval *stataData, **vararray, *table = NULL;
  
-  struct StataObservation *obsprev = NULL;
   int counterObs;
   int counterVars;
-  int observ;
-  char *var, buffer[256];
-  int str_len;
 
   if (zend_parse_parameters (ZEND_NUM_ARGS ()TSRMLS_CC, "r", &stataData) ==
       FAILURE)
@@ -445,7 +431,7 @@ PHP_FUNCTION (stata_data)
       array_init(vararray[counterObs]);       
 
      	
-      for (obd = obs->data, counterVars = 0, stv = dta->variables; obd, stv;
+      for (obd = obs->data, counterVars = 0, stv = dta->variables; obd && stv;
 	   obd = obd->next, stv = stv->next, counterVars++)
 	{
  
@@ -488,10 +474,9 @@ PHP_FUNCTION (stata_data)
 {{{ */
 PHP_FUNCTION(stata_write)
 {
-    zval *labels, *data, *variables, **entry;
+    zval *labels, *data, *variables;
     char *fname;
     size_t str_len; 
-    int i;
 
     if (zend_parse_parameters (ZEND_NUM_ARGS ()TSRMLS_CC, "saaa", &fname, &str_len, &data, &variables, &labels) == FAILURE)
     {
@@ -504,22 +489,17 @@ PHP_FUNCTION(stata_write)
 
     if (zend_hash_exists(ht_labels, str_labels)) {
 	  zval *vlabels;
-	  HashPosition position;
           zval * innerLabels = zend_hash_str_find(ht_labels, "labels", sizeof("labels") - 1);
 	  HashTable * ht_innerLabels = Z_ARRVAL_P(innerLabels);
 
           ZEND_HASH_FOREACH_PTR(ht_innerLabels, vlabels) {
 
 		  if (Z_TYPE_P(vlabels) == IS_ARRAY) {
-			HashPosition pointer;
-                        char *key;
-                        uint key_type;
-                        long index;
-
-			size_t key_len;
+                        zend_ulong index;
+                        HashPosition position;
 			zend_string * key_zs;
  			HashTable * ht_vlabels = Z_ARRVAL_P(vlabels);
-                        key_type = zend_hash_get_current_key_ex(ht_vlabels, &key_zs, &index, &position);
+                        int key_type = zend_hash_get_current_key_ex(ht_vlabels, &key_zs, &index, &position);
  
                         switch (key_type) {
                               case HASH_KEY_IS_STRING:
