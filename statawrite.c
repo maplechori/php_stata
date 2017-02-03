@@ -117,14 +117,10 @@ writeStataValueLabel(const char *labelName, zval * theselabels,
 
    ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(theselabels), str_vars, currentLabel) 
    {
-
-	printf("type: %d , len: %d str: %s\n\r", Z_TYPE_P(currentLabel), Z_STRLEN_P(currentLabel), Z_STRVAL_P(currentLabel));	
-
 	txtlen += Z_STRLEN_P(currentLabel) + 1;
    }
    ZEND_HASH_FOREACH_END();	
 
-   printf("textlen: %d\n\r", txtlen); 
    len += txtlen;
    OutIntegerBinary((int)len, fp, 0); 
    zend_error(E_NOTICE,"len: %ld", len);
@@ -194,7 +190,6 @@ writeStataValueLabel(const char *labelName, zval * theselabels,
     ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(theselabels), str_vars, currentLabel) 
     {
 	len = Z_STRLEN_P(currentLabel);
-	printf("str: %s len: %d\n\r", Z_STRVAL_P(currentLabel), len);
 	OutStringBinary(Z_STRVAL_P(currentLabel), fp, (int)len);
 	OutByteBinary(0, fp);
 	txtlen -= len+1;
@@ -264,7 +259,6 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
     OutByteBinary(0, fp);            /* padding */
 
     nvar = zend_hash_num_elements(Z_ARRVAL_P(vars));
-    printf("number of variables: %d\n\r", nvar);
     HashTable * ht_data = Z_ARRVAL_P(data);
 
     zend_string * str_data = zend_string_init("data", sizeof("data") -1 , 0);
@@ -278,7 +272,6 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
     OutShortIntBinary(nvar, fp);
     OutIntegerBinary(nobs, fp, 1);
 
-    printf("number of observations: %d\n\r", nobs);
 
     int ** types = ecalloc(nvar, sizeof(int*));
     int ** wrTypes = ecalloc(nvar, sizeof(int*));
@@ -317,24 +310,24 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
 	switch(Z_LVAL_P(valueType)) {
 
 		case STATA_SE_BYTE:
-			printf("byte %ld\n\r", Z_LVAL_P(valueType));
+			//printf("byte %ld\n\r", Z_LVAL_P(valueType));
                         OutByteBinary(STATA_SE_BYTE, fp);
 			break;	
 		case STATA_SE_INT:
-			printf("int %ld\n\r", Z_LVAL_P(valueType));
+			//printf("int %ld\n\r", Z_LVAL_P(valueType));
 			OutByteBinary(STATA_SE_INT, fp);
 			break;
 		case STATA_SE_SHORTINT:
-			printf("short %ld\n\r", Z_LVAL_P(valueType));
+			//printf("short %ld\n\r", Z_LVAL_P(valueType));
 			OutByteBinary(STATA_SE_SHORTINT, fp);
 			break;
 		case STATA_SE_FLOAT:
 			OutByteBinary(STATA_SE_DOUBLE,fp);
-			printf("float: %ld\n\r", Z_LVAL_P(valueType));
+			//printf("float: %ld\n\r", Z_LVAL_P(valueType));
 			break;
 		case STATA_SE_DOUBLE:
 			OutByteBinary(STATA_SE_DOUBLE,fp);
-			printf("double: %ld\n\r", Z_LVAL_P(valueType));
+			//printf("double: %ld\n\r", Z_LVAL_P(valueType));
 			break;
 		default: 
 			charlen = 0;
@@ -365,8 +358,6 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
 			   charlen = 2;
 			   *types[i] = charlen;
 			}
-			printf("string %d\n\r", charlen);
-			//printf("charlen: %d\n\r", charlen);
 			OutByteBinary((unsigned char)(charlen+STATA_SE_STRINGOFFSET), fp);
 			break;
 			
@@ -393,7 +384,6 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
 	but strings need accurate types */
 
     for (i = 0; i < nvar; i++) {
-	printf("%d : %d\n\r", i, *types[i]);
 	if (*types[i] != -1){
 	    // string types are at most 244 character so we can't get a buffer overflow in sprintf 
 	    memset(strformat, 0, 50);
@@ -525,7 +515,6 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
     ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(value_labels), str_vars, inner_labels)
     {
 	strncpy(aname, str_vars->val, namelength);
-        printf("WriteValueLabel: %s %x %d\n\r", aname, inner_labels, namelength);
 	writeStataValueLabel(aname, inner_labels, 0, namelength, fp);	
 	
     }

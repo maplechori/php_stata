@@ -152,10 +152,8 @@ struct StataDataFile * R_LoadStataData(FILE *fp)
     default:
 	zend_error(E_ERROR, "not a Stata version 5-12 .dta file");
     }
-    printf("version: %d varnamelength: %d fmtlistlen: %d\n\r", version, varnamelength, fmtlist_len);
     stata_endian = (int) RawByteBinary(fp, 1);     /* byte ordering */
     swapends = stata_endian != CN_TYPE_NATIVE;
-    printf("stata_endian: %d\n\r", stata_endian);
 
     struct StataDataFile * df = ecalloc(1, sizeof(struct StataDataFile));
 
@@ -167,7 +165,6 @@ struct StataDataFile * R_LoadStataData(FILE *fp)
     df->nvar = nvar;
     df->nobs = nobs;
 
-    printf("nvar: %d, nobs: %d\n\r", df->nvar, df->nobs);
     /* data label - zero terminated string */
     switch (abs(version)) {
     case 5:
@@ -270,7 +267,6 @@ struct StataDataFile * R_LoadStataData(FILE *fp)
 
     for (i = 0, stv=df->variables; i < nvar && stv; i++, stv = stv->next) {
 	InStringBinary(fp, varnamelength+1, aname);
-	printf("names[%d] [%s]\n\r", i, aname);
         stv->name = estrdup(aname);  
     }
 
@@ -285,7 +281,6 @@ struct StataDataFile * R_LoadStataData(FILE *fp)
 
     for (i = 0, stv=df->variables; i < nvar; i++, stv=stv->next) {	
 	InStringBinary(fp, fmtlist_len, timestamp);
-        printf("fmt_len: %d timestamp: %s\n\r", fmtlist_len,  timestamp);
         stv->vfmt = estrdup(timestamp);
     }
 
@@ -295,7 +290,6 @@ struct StataDataFile * R_LoadStataData(FILE *fp)
 
     for(i = 0, stv=df->variables; i < nvar; i++, stv=stv->next) {
 	InStringBinary(fp, varnamelength+1, aname);
-        printf("valueLabels: %d, %s\n\r", varnamelength+1, aname);
         stv->vlabels = estrdup(aname);
     }
 
@@ -306,7 +300,6 @@ struct StataDataFile * R_LoadStataData(FILE *fp)
 	for(i = 0, stv=df->variables; i < nvar; i++, stv=stv->next) {
 	    InStringBinary(fp, 32, datalabel);
             stv->dlabels = estrdup(datalabel);
-	    printf("variableLabel: %s\n\r", datalabel);
 	}
 	break;
     case 6:
@@ -317,7 +310,6 @@ struct StataDataFile * R_LoadStataData(FILE *fp)
         for(i = 0, stv=df->variables; i < nvar; i++, stv=stv->next) {
 	    InStringBinary(fp, 81, datalabel);
             stv->dlabels = estrdup(datalabel);
-	    printf("variableLabel: %s\n\r", datalabel);
 	}
     }
 
@@ -334,13 +326,11 @@ struct StataDataFile * R_LoadStataData(FILE *fp)
 	else
 	    charlen = (InShortIntBinary(fp, 1, swapends));
 
-	printf("charlen: %d\n\r", charlen);	
 	if((charlen > 66)) {
 	    InStringBinary(fp, 33, datalabel);
 	    InStringBinary(fp, 33, datalabel);
 	    txt = ecalloc(1, (size_t) (charlen-66));
 	    InStringBinary(fp, (charlen-66), txt);
-	    printf("charlen>66: %d %s\n\r", charlen-66, txt);
 	    efree(txt);
 	    j++;
 	} else
@@ -355,11 +345,9 @@ struct StataDataFile * R_LoadStataData(FILE *fp)
 	charlen = (InShortIntBinary(fp, 1, swapends));
     if (charlen != 0)
 	zend_error(E_ERROR, "something strange in the file (Type 0 characteristic of nonzero length)");
-    printf("characteristics: %d\n\r", charlen);
     struct StataObservation *obspcurr = NULL;
     struct StataObservationData * dptr = NULL;
     /** The Data **/
-    printf("version: %d\n\r", version);
     if (version > 0) { /* not Stata/SE */
 	for(i = 0; i < nobs; i++){
             if (df->observations == NULL)
@@ -391,7 +379,6 @@ struct StataDataFile * R_LoadStataData(FILE *fp)
 			dptr->next = ecalloc(1, sizeof(struct StataObservationData));
 			dptr = dptr->next;
 		}	
-		printf("Stata/SE valueType: %d\n\r", stv->valueType);
 		switch (stv->valueType) {
 		case STATA_FLOAT:
 		    dptr->value.d = InFloatBinary(fp, 0, swapends); 
@@ -427,7 +414,6 @@ struct StataDataFile * R_LoadStataData(FILE *fp)
 	}
     }  else {
 	for(i = 0; i < nobs; i++) {
-	    printf("i: %d nobs: %d\n\r", i, nobs);
             if (df->observations == NULL)
             {
                 df->observations = ecalloc(1, sizeof(struct StataObservation));
@@ -442,7 +428,6 @@ struct StataDataFile * R_LoadStataData(FILE *fp)
             }
 
             for(j = 0, stv = df->variables; j < nvar && stv; j++, stv = stv->next){
-		printf("j: %d nvar: %d\n\r", j, nvar);
                 if (obspcurr->data == NULL)
                 {
                         obspcurr->data = ecalloc(1, sizeof(struct StataObservationData));
@@ -454,7 +439,6 @@ struct StataDataFile * R_LoadStataData(FILE *fp)
                         dptr = dptr->next;
                 }
 
-		printf("valueType: %d\n\r", stv->valueType);
 		switch (stv->valueType) {
 		case STATA_SE_FLOAT:
 		    dptr->value.d = InFloatBinary(fp, 0, swapends);
@@ -494,7 +478,6 @@ struct StataDataFile * R_LoadStataData(FILE *fp)
 
 
     /** value labels **/
-    printf("value labels\n\r");
     if (abs(version) > 5) {
  
 	struct StataLabel * lblcurr = NULL;
@@ -502,22 +485,18 @@ struct StataDataFile * R_LoadStataData(FILE *fp)
 	for(j = 0; ; j++) {
 	    /* first int not needed, use fread directly to trigger EOF */
 	    res = (int) fread((int *) aname, sizeof(int), 1, fp);
-	    printf("aname: %s\n\r", aname);
 	    if (feof(fp)) break;
 
 	    if (res != 1) zend_error(E_ERROR, "a binary read error occurred");
 
 	    InStringBinary(fp, varnamelength+1, aname);
-            printf("InString: %d, %s\n\r", varnamelength+1, aname);
 	    RawByteBinary(fp, 1); RawByteBinary(fp, 1); RawByteBinary(fp, 1); /*padding*/
 	    nlabels = InIntegerBinary(fp, 1, swapends);
 
-	    printf("nlabels: %d\n\r" , nlabels);
 	     
 	    
 	    totlen = InIntegerBinary(fp, 1, swapends);
 
-	    printf("totlen: %d\n\r", totlen);
 	    off =  ecalloc(sizeof(int), (size_t) nlabels);
 	    for(i = 0; i < nlabels; i++)
 		off[i] = InIntegerBinary(fp, 1, swapends);
@@ -535,7 +514,6 @@ struct StataDataFile * R_LoadStataData(FILE *fp)
 				{
 					df->labels = ecalloc(1, sizeof(struct StataLabel));
 					lblcurr = df->labels;
-					printf("df->labels == NULL %s\n\r", aname);
 					lblcurr->name = estrdup(aname);
 					lblcurr->value=levels[i];
 					lblcurr->string = estrdup(txt+off[i]);
@@ -546,7 +524,6 @@ struct StataDataFile * R_LoadStataData(FILE *fp)
 				{
 					lblcurr->next = ecalloc(1,  sizeof(struct StataLabel));
 					lblcurr = lblcurr->next;
-					printf("df!=labels %s\n\r", aname);
 					lblcurr->name = estrdup(aname);
 					lblcurr->value=levels[i];
 					lblcurr->string = estrdup(txt+off[i]);
@@ -575,7 +552,6 @@ struct StataDataFile * R_LoadStataData(FILE *fp)
     */
 
     //INTEGER(sversion)[0] = (version == -7)? version : abs(version);
-    printf("return df\n\r");
     return df;
 }
 

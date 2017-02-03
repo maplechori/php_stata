@@ -362,9 +362,9 @@ PHP_FUNCTION (stata_labels)
     }
 
   if (finishup)
-    add_assoc_zval (&innertable, currName, &temp_array);
+    add_assoc_zval(&innertable, currName, &temp_array);
 
-  add_assoc_zval (return_value, "labels", &innertable);
+  add_assoc_zval(return_value, "labels", &innertable);
 }
 
 
@@ -375,11 +375,9 @@ PHP_FUNCTION (stata_data)
   struct StataObservation *obs;
   struct StataObservationData *obd;
   struct StataVariable *stv;
-  zval *stataData, vararray, table;
+  zval *stataData, xtable;
+  int counterObs = 0;
  
-  int counterObs;
-  int counterVars;
-
   if (zend_parse_parameters (ZEND_NUM_ARGS ()TSRMLS_CC, "r", &stataData) ==
       FAILURE)
     {
@@ -387,27 +385,23 @@ PHP_FUNCTION (stata_data)
     }
 
 
-    dta = (struct StataDataFile *) zend_fetch_resource(Z_RES_P(stataData), PHP_STATA_FILE_RES_NAME, le_stata_file);
-
+  dta = (struct StataDataFile *) zend_fetch_resource(Z_RES_P(stataData), PHP_STATA_FILE_RES_NAME, le_stata_file);
 
   if (dta == NULL)
     RETURN_NULL();
+  
   array_init (return_value);
+  array_init(&xtable);
 
-  array_init(&table);
-
-  obs = dta->observations;
-
-  for (obs = dta->observations, counterObs = 0; obs;
+  for (obs = dta->observations; obs;
        obs = obs->next, counterObs++)
     {
+      zval vararray;
       array_init(&vararray);       
 
-     	
-      for (obd = obs->data, counterVars = 0, stv = dta->variables; obd && stv;
-	   obd = obd->next, stv = stv->next, counterVars++)
+      for (obd = obs->data, stv = dta->variables; obd && stv;
+	   obd = obd->next, stv = stv->next)
 	{
- 
 	  switch (stv->valueType)
 	    {
 	    case STATA_SE_FLOAT:
@@ -431,10 +425,11 @@ PHP_FUNCTION (stata_data)
 	      break;
 	    }
 	}
-	add_index_zval(&table, counterObs, &vararray);
+	add_index_zval(&xtable, counterObs, &vararray);
     }
 
-  add_assoc_zval(return_value, "data", &table);
+  add_assoc_zval(return_value, "data", &xtable);
+
 }
 /* 
 {{{ */
@@ -485,44 +480,8 @@ PHP_FUNCTION(stata_write)
 
 	  }
           ZEND_HASH_FOREACH_END();
-
-/*          for (zend_hash_internal_pointer_reset_ex(Z_ARRVAL_PP(innerLabels), &position); 
-                              zend_hash_get_current_data_ex((*innerLabels)->value.ht, (void**) &vlabels, &position) == SUCCESS;
-                                zend_hash_move_forward_ex((*innerLabels)->value.ht, &position)) {
-
-				
-				if (Z_TYPE_PP(vlabels) == IS_ARRAY)
-				{
-					 HashPosition pointer;
-					 char *key;
-					 uint key_len, key_type;
-					 long index;
- 
-					 key_type = zend_hash_get_current_key_ex(Z_ARRVAL_PP(vlabels), &key, &key_len, &index, 0, &position);
- 
-					 switch (key_type) {
-						  case HASH_KEY_IS_STRING:
-							    // associative array keys
-							    //php_printf("key: %s<br>", key);
-							    break;
-						  case HASH_KEY_IS_LONG:
-							    // numeric indexes
-							    //php_printf("index: %ld<br>", index);
-							    break;
-						  default:
-							    break;
-					  }
-				}
-
-				
+        }
     
-
-	  } */
-           
-    }
-
-
-
 
     do_writeStata(fname, data, variables, labels);
 
