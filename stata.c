@@ -266,8 +266,7 @@ PHP_FUNCTION (stata_variables)
   struct StataDataFile *dta = NULL;
   struct StataVariable *stv;
   zval *stataData;
-  zval **innerarray;
-  int i = 0, count = 0;
+  int count = 0;
 
   if (zend_parse_parameters (ZEND_NUM_ARGS ()TSRMLS_CC, "r", &stataData) == FAILURE)
   {
@@ -281,36 +280,25 @@ PHP_FUNCTION (stata_variables)
 
   array_init(return_value);
 
-  innerarray = emalloc (sizeof(zval *) *  (dta->nvar));
-
-  for (i = 0; i < dta->nvar; i++)
-  {
-      printf(">>>%d\n\r\n\r\n\r", i);
-      array_init(innerarray[i]);
-  }
-
   for (stv = dta->variables; stv; stv = stv->next, count++)
   {
-      add_assoc_string (innerarray[count], "vlabels", stv->vlabels);
-      add_assoc_string (innerarray[count], "dlabels", stv->dlabels);
-      add_assoc_string (innerarray[count], "vfmt", stv->vfmt);
-      add_assoc_long(innerarray[count], "valueType", stv->valueType);
-      add_assoc_zval (return_value, stv->name, innerarray[count]);
+      zval tmp_array;
+      array_init(&tmp_array);
+      add_assoc_string (&tmp_array, "vlabels", stv->vlabels); 
+      add_assoc_string (&tmp_array, "dlabels", stv->dlabels);
+      add_assoc_string (&tmp_array, "vfmt", stv->vfmt);
+      add_assoc_long(&tmp_array, "valueType", stv->valueType);
+      add_assoc_zval (return_value, stv->name, &tmp_array);
   }
-
-  efree (innerarray);
-
 
 }
 
 
 PHP_FUNCTION (stata_labels)
 {
-  int i;
   struct StataDataFile *dta;
   struct StataLabel *stl;
   zval *stataData = NULL;
-  zval *innertable = NULL;
 
   if (zend_parse_parameters (ZEND_NUM_ARGS ()TSRMLS_CC, "r", &stataData) ==
       FAILURE)
@@ -330,64 +318,53 @@ PHP_FUNCTION (stata_labels)
   buff[0] = 0;
   currName[0] = 0;
 
-  array_init (innertable);
-
-  zval **innerarray = emalloc (sizeof (zval *) * dta->nlabels);
-
-  for (i = 0; i < dta->nlabels; i++)
-    {
-      array_init (innerarray[i]);
-    }
+  zval innertable, temp_array;
+  array_init (&innertable);
 
   int finishup = 0;
 
   for (stl = dta->labels; stl; stl = stl->next)
     {
+      array_init(&temp_array);
+
       if (currName[0] == 0)
 	{
 	  strcpy (currName, stl->name);
 	  sprintf (buff, "%d", stl->value);
-	  add_assoc_string (innerarray[0], buff, stl->string);
+	  add_assoc_string (&temp_array, buff, stl->string);
 	}
       else
 	{
 	  if (!strcmp (currName, stl->name))
 	    {
 	      sprintf (buff, "%d", stl->value);
-	      add_assoc_string (innerarray[count], buff, stl->string);
+	      add_assoc_string (&temp_array, buff, stl->string);
 	      strcpy (currName, stl->name);
 
 	      if (count == dta->nlabels - 1)
 		{
 		  sprintf (buff, "%d", stl->value);
-		  add_assoc_string (innerarray[count], buff, stl->string);
+		  add_assoc_string (&temp_array, buff, stl->string);
 		  finishup = 1;
 		}
 
 	    }
 	  else
 	    {
-	      add_assoc_zval (innertable, currName, innerarray[count]);
+	      add_assoc_zval (&innertable, currName, &temp_array);
 	      count++;
 	      strcpy (currName, stl->name);
 	      sprintf (buff, "%d", stl->value);
-	      add_assoc_string (innerarray[count], buff, stl->string);
+	      add_assoc_string (&temp_array, buff, stl->string);
 
 	    }
 	}
     }
 
   if (finishup)
-    add_assoc_zval (innertable, currName, innerarray[count]);
+    add_assoc_zval (&innertable, currName, &temp_array);
 
-
-  add_assoc_zval (return_value, "labels", innertable);
-  innertable = NULL;
-
-  efree (innerarray);
-
-
-
+  add_assoc_zval (return_value, "labels", &innertable);
 }
 
 
@@ -398,7 +375,7 @@ PHP_FUNCTION (stata_data)
   struct StataObservation *obs;
   struct StataObservationData *obd;
   struct StataVariable *stv;
-  zval *stataData, **vararray, *table = NULL;
+  zval *stataData, vararray, table;
  
   int counterObs;
   int counterVars;
@@ -417,18 +394,14 @@ PHP_FUNCTION (stata_data)
     RETURN_NULL();
   array_init (return_value);
 
-  vararray = emalloc(sizeof(zval*) * dta->nobs);
-
-
-  array_init(table);
+  array_init(&table);
 
   obs = dta->observations;
 
   for (obs = dta->observations, counterObs = 0; obs;
        obs = obs->next, counterObs++)
     {
-
-      array_init(vararray[counterObs]);       
+      array_init(&vararray);       
 
      	
       for (obd = obs->data, counterVars = 0, stv = dta->variables; obd && stv;
@@ -441,7 +414,7 @@ PHP_FUNCTION (stata_data)
 	    case STATA_SE_DOUBLE:
 	    case STATA_FLOAT:
 	    case STATA_DOUBLE:
-	      add_assoc_double (vararray[counterObs], stv->name, obd->value.d);
+	      add_assoc_double (&vararray, stv->name, obd->value.d);
 	      break;
 	    case STATA_SE_INT:
 	    case STATA_INT:
@@ -449,26 +422,19 @@ PHP_FUNCTION (stata_data)
 	    case STATA_SHORTINT:
 	    case STATA_SE_BYTE:
 	    case STATA_BYTE:
-	      add_assoc_long (vararray[counterObs], stv->name, obd->value.i);
+	      add_assoc_long (&vararray, stv->name, obd->value.i);
 	      break;
 	    default:
 	      if (stv->valueType > 244)
 		zend_error (E_ERROR,"unknown data type");
-	      add_assoc_string (vararray[counterObs], stv->name, obd->value.string);
+	      add_assoc_string (&vararray, stv->name, obd->value.string);
 	      break;
 	    }
-
-
 	}
-
-	add_index_zval(table, counterObs, vararray[counterObs]);
+	add_index_zval(&table, counterObs, &vararray);
     }
 
-  efree(vararray);
-
-  add_assoc_zval(return_value, "data", table);
-
-
+  add_assoc_zval(return_value, "data", &table);
 }
 /* 
 {{{ */
