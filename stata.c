@@ -56,31 +56,6 @@ PHP_INI_END()
    so that your module can be compiled into PHP, it exists only for testing
    purposes. */
 
-/* Every user-visible function in PHP should document itself in the source */
-/* {{{ proto string confirm_stata_compiled(string arg)
-   Return a string to confirm that the module is compiled in */
-PHP_FUNCTION(confirm_stata_compiled)
-{
-	char *arg = NULL;
-	size_t arg_len;
-	zend_string *strg;
-
-	if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &arg, &arg_len) == FAILURE) {
-		return;
-	}
-
-	strg = strpprintf(0, "PHP STATA You have successfully modified ext/%.78s/config.m4. Module %.78s is now compiled into PHP.", "stata", arg);
-
-	RETURN_STR(strg);
-}
-/* }}} */
-/* The previous line is meant for vim and emacs, so it can correctly fold and
-   unfold functions in source code. See the corresponding marks just before
-   function definition, where the functions purpose is also documented. Please
-   follow this convention for the convenience of others editing your code.
-*/
-
-
 /* {{{ php_stata_init_globals
  */
 /* Uncomment this function if you have INI entries
@@ -375,8 +350,8 @@ PHP_FUNCTION (stata_data)
   struct StataObservation *obs;
   struct StataObservationData *obd;
   struct StataVariable *stv;
-  zval *stataData, xtable;
-  int counterObs = 0;
+  zval *stataData, data;
+  int observation_counter = 0;
  
   if (zend_parse_parameters (ZEND_NUM_ARGS ()TSRMLS_CC, "r", &stataData) ==
       FAILURE)
@@ -391,13 +366,13 @@ PHP_FUNCTION (stata_data)
     RETURN_NULL();
   
   array_init (return_value);
-  array_init(&xtable);
+  array_init(&data);
 
   for (obs = dta->observations; obs;
-       obs = obs->next, counterObs++)
+       obs = obs->next, observation_counter++)
     {
-      zval vararray;
-      array_init(&vararray);       
+      zval observation;
+      array_init(&observation);       
 
       for (obd = obs->data, stv = dta->variables; obd && stv;
 	   obd = obd->next, stv = stv->next)
@@ -408,7 +383,7 @@ PHP_FUNCTION (stata_data)
 	    case STATA_SE_DOUBLE:
 	    case STATA_FLOAT:
 	    case STATA_DOUBLE:
-	      add_assoc_double (&vararray, stv->name, obd->value.d);
+	      add_assoc_double (&observation, stv->name, obd->value.d);
 	      break;
 	    case STATA_SE_INT:
 	    case STATA_INT:
@@ -416,19 +391,19 @@ PHP_FUNCTION (stata_data)
 	    case STATA_SHORTINT:
 	    case STATA_SE_BYTE:
 	    case STATA_BYTE:
-	      add_assoc_long (&vararray, stv->name, obd->value.i);
+	      add_assoc_long (&observation, stv->name, obd->value.i);
 	      break;
 	    default:
 	      if (stv->valueType > 244)
 		zend_error (E_ERROR,"unknown data type");
-	      add_assoc_string (&vararray, stv->name, obd->value.string);
+	      add_assoc_string (&observation, stv->name, obd->value.string);
 	      break;
 	    }
 	}
-	add_index_zval(&xtable, counterObs, &vararray);
+	add_index_zval(&data, observation_counter, &observation);
     }
 
-  add_assoc_zval(return_value, "data", &xtable);
+  add_assoc_zval(return_value, "data", &data);
 
 }
 /* 

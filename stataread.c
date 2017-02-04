@@ -284,7 +284,6 @@ struct StataDataFile * R_LoadStataData(FILE *fp)
         stv->vfmt = estrdup(timestamp);
     }
 
-
     /** value labels.  These are stored as the names of label formats,
 	which are themselves stored later in the file. **/
 

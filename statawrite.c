@@ -114,7 +114,7 @@ writeStataValueLabel(const char *labelName, zval * theselabels,
    txtlen = 0;
    zval * currentLabel;
    zend_string * str_vars;
-
+ 
    ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(theselabels), str_vars, currentLabel) 
    {
 	txtlen += Z_STRLEN_P(currentLabel) + 1;
@@ -139,19 +139,6 @@ writeStataValueLabel(const char *labelName, zval * theselabels,
  /* offsets */
     len = 0;
    
- /*
-    for (zend_hash_internal_pointer_reset_ex(Z_ARRVAL_PP(theselabels), &labelposition), i=0;
-                            zend_hash_get_current_data_ex(Z_ARRVAL_PP(theselabels), (void**) &currentLabel, &labelposition) == SUCCESS;
-                                     zend_hash_move_forward_ex(Z_ARRVAL_PP(theselabels), &labelposition), i++) {
-
-	
-
-	OutIntegerBinary((int)len, fp, 0);
-        zend_error(E_NOTICE, "%s %d", Z_STRVAL_PP(currentLabel), Z_STRLEN_PP(currentLabel));
-	len += Z_STRLEN_PP(currentLabel) + 1;
-    }
-  */
-
     ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(theselabels), str_vars, currentLabel)
     { 
         OutIntegerBinary((int)len, fp, 0);
@@ -168,23 +155,6 @@ writeStataValueLabel(const char *labelName, zval * theselabels,
 	OutIntegerBinary(index, fp, 0);
     } 
     ZEND_HASH_FOREACH_END();
-/****
-    
-       for (zend_hash_internal_pointer_reset_ex(Z_ARRVAL_PP(theselabels), &labelposition), i=0;
-                            zend_hash_get_current_data_ex(Z_ARRVAL_PP(theselabels), (void**) &currentLabel, &labelposition) == SUCCESS;
-                                     zend_hash_move_forward_ex(Z_ARRVAL_PP(theselabels), &labelposition), i++) {
- 
-		char *keyStr;
-        	uint key_len, key_type;
-        	long index;
-        	int k;
-
-        	key_type = zend_hash_get_current_key_ex(Z_ARRVAL_PP(theselabels), &keyStr, &key_len, &index, 0, &labelposition);
-		zend_error(E_NOTICE, "currentValue: %ld", index);
-		OutIntegerBinary(index, fp, 0);
-        }
-
-****/
 // the actual labels 
 
     ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(theselabels), str_vars, currentLabel) 
@@ -197,27 +167,9 @@ writeStataValueLabel(const char *labelName, zval * theselabels,
 	if (txtlen < 0)
 		zend_error(E_WARNING, "this shoud not happen: overrun");
 	
-
     }
     ZEND_HASH_FOREACH_END();
 
-/****
-        for (zend_hash_internal_pointer_reset_ex(Z_ARRVAL_PP(theselabels), &labelposition), i=0;
-                            zend_hash_get_current_data_ex(Z_ARRVAL_PP(theselabels), (void**) &currentLabel, &labelposition) == SUCCESS;
-                                     zend_hash_move_forward_ex(Z_ARRVAL_PP(theselabels), &labelposition), i++) {
-
-
-	len = Z_STRLEN_PP(currentLabel);
-        OutStringBinary(Z_STRVAL_PP(currentLabel), fp, (int)len);
-        OutByteBinary(0, fp);
-        txtlen -= len+1;
-
-        if (txtlen < 0)
-                zend_error(E_WARNING, "this should happen: overrun");
-
-         }
-
-****/    
     if (txtlen > 0) 
 	zend_error(E_WARNING, "this should not happen: underrun");
 
@@ -232,10 +184,8 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
     char datalabel[81] = "Created by PHP Stata (Adrian Montero)",
 	timestamp[18], aname[33];
     char format9g[50] = "%9.0g", strformat[50] = "";
-    //const char *thisnamechar;
 
     zval * data_inner;
-    //zval * variables_inner;
 
     int namelength = 8;
     int fmtlist_len = 12;
