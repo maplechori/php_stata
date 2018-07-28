@@ -5,8 +5,10 @@ PHP Extension for reading and writing STATA files<br>
 
 This extension was created to facilitate the data dissemination of the following projects: <br>
 
-<b>Understanding America Study Datapages (http://uasdata.usc.edu) </b>
-<b>Gateway to Global Aging Data (http://g2aging.org). </b>
+<li>
+	<ul><b>Understanding America Study Datapages (http://uasdata.usc.edu) </b></ul>
+	<ul><b>Gateway to Global Aging Data (http://g2aging.org). </b></ul>
+</li>
 
 
 1) Read and display Highcharts charts directly from Stata<br>
