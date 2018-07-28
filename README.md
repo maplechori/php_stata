@@ -1,15 +1,19 @@
 php_stata
 =========
 
-PHP Extension for reading and writing STATA files
+PHP Extension for reading and writing STATA files<br>
 
-I am writing this extension to facilitate the data dissemination of our projects: The Understanding America Study Datapages (http://uasdata.usc.edu) and the Gateway to Global Aging Data (http://g2aging.org). It has already been implemented in:<br>
+This extension was created to facilitate the data dissemination of the following projects: <br>
+
+<b>Understanding America Study Datapages (http://uasdata.usc.edu) </b>
+<b>Gateway to Global Aging Data (http://g2aging.org). </b>
+
 
 1) Read and display Highcharts charts directly from Stata<br>
 2) Provide descriptive information to the UAS Datapages viewers<br>
-3) Generate question carts by opening and combining Stata files on t hhe fly<br>
+3) Generate question carts by opening and combining Stata files on the fly<br>
 
-This PHP module has only been tested in Apache.
+This PHP module has been tested using Apache.
 
 In order to compile the module, please type <b>phpize</b> on the directory to generate the config files.
 
