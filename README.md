@@ -28,7 +28,8 @@ In order to compile the module, please type <b>phpize</b> on the directory to ge
 Please use the PHP 7 branch
 
 Example use:
-`
+
+<pre>
 
 /* Reading */
 $res = stata_open("/var/www/html/filename.dta");
@@ -70,5 +71,4 @@ stata_write("filename.dta", array("data" =>
                                         array("labels" => array( "gfk2_live_vl5" => 
                                                                       array(44 => "44 Face",
                                                                       55 => "55 Call center"))));
-`
-
+</pre>
