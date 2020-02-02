@@ -142,7 +142,7 @@ writeStataValueLabel(const char *labelName, zval * theselabels,
     ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(theselabels), str_vars, currentLabel)
     { 
         OutIntegerBinary((int)len, fp, 0);
-        zend_error(E_NOTICE, "%s %d", Z_STRVAL_P(currentLabel), Z_STRLEN_P(currentLabel));
+        zend_error(E_NOTICE, "%s %ld", Z_STRVAL_P(currentLabel), Z_STRLEN_P(currentLabel));
         len += Z_STRLEN_P(currentLabel) + 1;
     } 
     ZEND_HASH_FOREACH_END();
@@ -151,7 +151,7 @@ writeStataValueLabel(const char *labelName, zval * theselabels,
    // values: just 1,2,3,...
     ZEND_HASH_FOREACH_KEY(Z_ARRVAL_P(theselabels), index, str_vars)
     { 
-	zend_error(E_NOTICE, "currentValue: %ld", index);
+	zend_error(E_NOTICE, "currentValue: %d", index);
 	OutIntegerBinary(index, fp, 0);
     } 
     ZEND_HASH_FOREACH_END();
@@ -425,7 +425,7 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
                                 zend_error(E_NOTICE, "IS DOUBLE %f", Z_DVAL_P(obs_value));
                         	break;
                         case IS_STRING:
-                                zend_error(E_NOTICE, "IS STRING %s %d", Z_STRVAL_P(obs_value), Z_STRLEN_P(obs_value));
+                                zend_error(E_NOTICE, "IS STRING %s %ld", Z_STRVAL_P(obs_value), Z_STRLEN_P(obs_value));
                                 k = Z_STRLEN_P(obs_value);
                                 if (k == 0)
                                 {

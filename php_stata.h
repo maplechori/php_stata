@@ -22,9 +22,10 @@
 #define PHP_STATA_H
 
 extern zend_module_entry stata_module_entry;
-#define phpext_stata_ptr &stata_module_entry
+#define stata_module_ptr &stata_module_entry
+#define phpext_stata_ptr stata_module_ptr
 
-#define PHP_STATA_VERSION "1.1" /* Replace with version number for your extension */
+#define PHP_STATA_VERSION "1.2" /* Replace with version number for your extension */
 #define PHP_STATA_EXTNAME "stata"
 #define PHP_STATA_AUTHOR "Adrian Montero"
 

@@ -468,7 +468,7 @@ PHP_FUNCTION(stata_write)
  * Every user visible function must have an entry in stata_functions[].
  */
 const zend_function_entry stata_functions[] = {
-        PHP_FE(stata_open, NULL)
+      	PHP_FE(stata_open, NULL)
         PHP_FE(stata_observations, NULL)
         PHP_FE(stata_data, NULL)
         PHP_FE(stata_variables, NULL)
@@ -483,7 +483,9 @@ const zend_function_entry stata_functions[] = {
 /* {{{ stata_module_entry
  */
 zend_module_entry stata_module_entry = {
-        STANDARD_MODULE_HEADER,
+#if ZEND_MODULE_API_NO >= 20010901
+    STANDARD_MODULE_HEADER,
+#endif 
         "stata",
         stata_functions,
         PHP_MINIT(stata),
@@ -491,7 +493,9 @@ zend_module_entry stata_module_entry = {
         PHP_RINIT(stata),               /* Replace with NULL if there's nothing to do at request start */
         PHP_RSHUTDOWN(stata),   /* Replace with NULL if there's nothing to do at request end */
         PHP_MINFO(stata),
-        PHP_STATA_VERSION,
+#if ZEND_MODULE_API_NO >= 20010901
+		PHP_STATA_VERSION,
+#endif		
         STANDARD_MODULE_PROPERTIES
 };
 /* }}} */
