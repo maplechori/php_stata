@@ -23,5 +23,5 @@ jobs:
     - uses: actions/checkout@v2
 
     # Runs a single command using the runners shell
-    - name: run tests
+    - name: run tests on docker
       run: docker compose .
