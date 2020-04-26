@@ -1,4 +1,4 @@
 name: 'Tests'
 runs:
   using: 'docker'
-  image: 'Dockerfile'
+  image: '../../../Dockerfile'
