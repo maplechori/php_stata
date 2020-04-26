@@ -1,5 +1,7 @@
 # PHP Extension for reading and writing STATA files
 
+![CI](https://github.com/maplechori/php_stata/workflows/CI/badge.svg?event=push)
+
 This extension was created to facilitate the data dissemination of the following projects: 
 
 - The Understanding America Study Datapages (http://uasdata.usc.edu) 
