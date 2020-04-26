@@ -24,6 +24,7 @@
 #include "php.h"
 static int stata_endian;
 
+double R_ValueOfNA(void);
 
 /** Low-level input **/
 
@@ -96,16 +97,13 @@ static void InStringBinary(FILE * fp, int nchar, char* buffer)
         zend_error(E_ERROR, "a binary read error occurred");
 }
 
-static char* nameMangle(char *stataname, int len){
-  return stataname;
-}
 
 
 
 struct StataDataFile * R_LoadStataData(FILE *fp)
 {
     int i, j = 0, nvar, nobs, charlen, version, swapends, 
-	varnamelength, nlabels, totlen, res, vlabelCounter = 0;
+	varnamelength, nlabels, totlen, res;
     unsigned char abyte;
     /* timestamp is used for timestamp and for variable formats */
     char datalabel[81], timestamp[50], aname[33];
@@ -166,6 +164,7 @@ struct StataDataFile * R_LoadStataData(FILE *fp)
 
     df->nvar = nvar;
     df->nobs = nobs;
+
     /* data label - zero terminated string */
     switch (abs(version)) {
     case 5:
@@ -191,7 +190,6 @@ struct StataDataFile * R_LoadStataData(FILE *fp)
     /** types **/
 
     struct StataVariable * stvcurr = NULL;
- 
     if (version > 0){
 	for(i = 0; i < nvar; i++){
             struct StataVariable * stv = ecalloc(1, sizeof(struct StataVariable));
@@ -228,6 +226,7 @@ struct StataDataFile * R_LoadStataData(FILE *fp)
 	    }
 	}
     } else {
+
 
 	for(i = 0; i < nvar; i++){
             struct StataVariable * stv = ecalloc(1, sizeof(struct StataVariable));
@@ -266,7 +265,7 @@ struct StataDataFile * R_LoadStataData(FILE *fp)
     /** names **/
     struct StataVariable * stv = NULL;
 
-    for (i = 0, stv=df->variables; i < nvar, stv; i++, stv = stv->next) {
+    for (i = 0, stv=df->variables; i < nvar && stv; i++, stv = stv->next) {
 	InStringBinary(fp, varnamelength+1, aname);
         stv->name = estrdup(aname);  
     }
@@ -284,7 +283,6 @@ struct StataDataFile * R_LoadStataData(FILE *fp)
 	InStringBinary(fp, fmtlist_len, timestamp);
         stv->vfmt = estrdup(timestamp);
     }
-
 
     /** value labels.  These are stored as the names of label formats,
 	which are themselves stored later in the file. **/
@@ -311,7 +309,6 @@ struct StataDataFile * R_LoadStataData(FILE *fp)
         for(i = 0, stv=df->variables; i < nvar; i++, stv=stv->next) {
 	    InStringBinary(fp, 81, datalabel);
             stv->dlabels = estrdup(datalabel);
-
 	}
     }
 
@@ -327,7 +324,7 @@ struct StataDataFile * R_LoadStataData(FILE *fp)
 	    charlen = (InIntegerBinary(fp, 1, swapends));
 	else
 	    charlen = (InShortIntBinary(fp, 1, swapends));
-	
+
 	if((charlen > 66)) {
 	    InStringBinary(fp, 33, datalabel);
 	    InStringBinary(fp, 33, datalabel);
@@ -347,8 +344,6 @@ struct StataDataFile * R_LoadStataData(FILE *fp)
 	charlen = (InShortIntBinary(fp, 1, swapends));
     if (charlen != 0)
 	zend_error(E_ERROR, "something strange in the file (Type 0 characteristic of nonzero length)");
-
-    struct StataObservation * obsp = NULL;
     struct StataObservation *obspcurr = NULL;
     struct StataObservationData * dptr = NULL;
     /** The Data **/
@@ -371,7 +366,7 @@ struct StataDataFile * R_LoadStataData(FILE *fp)
 		obspcurr->n = i;
             }
 		
-	    for(j = 0, stv = df->variables; j < nvar, stv; j++, stv = stv->next){
+	    for(j = 0, stv = df->variables; j < nvar && stv; j++, stv = stv->next){
 	
 		if (obspcurr->data == NULL)
                 {
@@ -417,7 +412,7 @@ struct StataDataFile * R_LoadStataData(FILE *fp)
 	    }
 	}
     }  else {
-	for(i = 0; i < nobs; i++){
+	for(i = 0; i < nobs; i++) {
             if (df->observations == NULL)
             {
                 df->observations = ecalloc(1, sizeof(struct StataObservation));
@@ -431,8 +426,7 @@ struct StataDataFile * R_LoadStataData(FILE *fp)
                 obspcurr->n = i;
             }
 
-            for(j = 0, stv = df->variables; j < nvar, stv; j++, stv = stv->next){
-
+            for(j = 0, stv = df->variables; j < nvar && stv; j++, stv = stv->next){
                 if (obspcurr->data == NULL)
                 {
                         obspcurr->data = ecalloc(1, sizeof(struct StataObservationData));
@@ -491,6 +485,7 @@ struct StataDataFile * R_LoadStataData(FILE *fp)
 	    /* first int not needed, use fread directly to trigger EOF */
 	    res = (int) fread((int *) aname, sizeof(int), 1, fp);
 	    if (feof(fp)) break;
+
 	    if (res != 1) zend_error(E_ERROR, "a binary read error occurred");
 
 	    InStringBinary(fp, varnamelength+1, aname);
@@ -500,12 +495,13 @@ struct StataDataFile * R_LoadStataData(FILE *fp)
 	     
 	    
 	    totlen = InIntegerBinary(fp, 1, swapends);
+
 	    off =  ecalloc(sizeof(int), (size_t) nlabels);
 	    for(i = 0; i < nlabels; i++)
 		off[i] = InIntegerBinary(fp, 1, swapends);
             
 	    int * levels = ecalloc(sizeof(int), (size_t)nlabels);
-	    for(i = 0; i < nlabels; i++)
+	    for(i = 0; i < nlabels; i++) 
 	        levels[i] =  InIntegerBinary(fp, 0, swapends);
 	    txt =  ecalloc(sizeof(char), (size_t) totlen);
 	    InStringBinary(fp, totlen, txt);
@@ -555,7 +551,6 @@ struct StataDataFile * R_LoadStataData(FILE *fp)
     */
 
     //INTEGER(sversion)[0] = (version == -7)? version : abs(version);
-
     return df;
 }
 
@@ -624,7 +619,6 @@ int do_stataClose(struct StataDataFile * dta)
 
 struct StataDataFile * do_readStata(char * fileName)
 {
-    int result;
     FILE *fp;
     struct StataDataFile * df = NULL;
 
@@ -633,6 +627,7 @@ struct StataDataFile * do_readStata(char * fileName)
       zend_error(E_ERROR, "can not yet read Stata .dta on this platform");
       return NULL;
     }
+
 
     fp = fopen(fileName, "rb");
     if (!fp)
