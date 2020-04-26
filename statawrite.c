@@ -260,40 +260,35 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
 	switch(Z_LVAL_P(valueType)) {
 
 		case STATA_SE_BYTE:
-			//printf("byte %ld\n\r", Z_LVAL_P(valueType));
-                        OutByteBinary(STATA_SE_BYTE, fp);
+            OutByteBinary(STATA_SE_BYTE, fp);
 			break;	
 		case STATA_SE_INT:
-			//printf("int %ld\n\r", Z_LVAL_P(valueType));
 			OutByteBinary(STATA_SE_INT, fp);
 			break;
 		case STATA_SE_SHORTINT:
-			//printf("short %ld\n\r", Z_LVAL_P(valueType));
 			OutByteBinary(STATA_SE_SHORTINT, fp);
 			break;
 		case STATA_SE_FLOAT:
 			OutByteBinary(STATA_SE_DOUBLE,fp);
-			//printf("float: %ld\n\r", Z_LVAL_P(valueType));
 			break;
 		case STATA_SE_DOUBLE:
 			OutByteBinary(STATA_SE_DOUBLE,fp);
-			//printf("double: %ld\n\r", Z_LVAL_P(valueType));
 			break;
 		default: 
 			charlen = 0;
-			zval * strSize;
-			long * num;
+			zval * strSize = NULL;
+			zend_string * num;
 
-		        ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(data_inner), num, strSize)
+		    ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(data_inner), num, strSize)
 			{
 			    zval * obs_value = zend_hash_find(Z_ARRVAL_P(strSize), str_vars);
-		            k = Z_STRLEN_P(obs_value); 
+		        k = Z_STRLEN_P(obs_value); 
 
-                	    if (k>charlen)
-                            {
-                               charlen=k;
-                               *types[i] = charlen;
-                            }
+                if (k>charlen)
+                {
+                   charlen=k;
+                   *types[i] = charlen;
+                }
 
 			}
 			ZEND_HASH_FOREACH_END();
@@ -399,7 +394,7 @@ void R_SaveStataData(FILE *fp, zval *data, zval *vars, zval *labels)
 	OutByteBinary(0, fp);
     }
 	
-    long * num = 0;
+    zend_string * num;
     zval * strSize;
     /** The Data **/
     data_inner = zend_hash_find(Z_ARRVAL_P(data), str_data);

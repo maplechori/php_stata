@@ -1,36 +1,41 @@
-php_stata
+# php_stata
 =========
 
-PHP Extension for reading and writing STATA files
+## PHP Extension for reading and writing STATA files
 
-I am writing this extension to facilitate the data dissemination of our projects: The Understanding America Study Datapages (http://uasdata.usc.edu) and the Gateway to Global Aging Data (http://g2aging.org). It has already been implemented in:<br>
+I am writing this extension to facilitate the data dissemination of our projects: 
 
-1) Read and display Highcharts charts directly from Stata<br>
-2) Provide descriptive information to the UAS Datapages viewers<br>
-3) Generate question carts by opening and combining Stata files on t hhe fly<br>
+- The Understanding America Study Datapages (http://uasdata.usc.edu) 
+- The Gateway to Global Aging Data (http://g2aging.org). 
 
-This PHP module has only been tested in Apache.
+It has already been implemented in:
 
-In order to compile the module, please type <b>phpize</b> on the directory to generate the config files.
+- Read and display Highcharts charts directly from Stata
+- Provide descriptive information to the UAS Datapages viewers
+- Generate question carts by opening and combining Stata files on the fly
 
-1) install php5-dev (for phpize)<br>
-2) cd to directory with source files<br>
-3) $ phpize<br>
-4) $ ./configure<br>
-5) $ make install<br>
-6) On successful execution, the extension stata.so can be found in the subdirectory “modules”<br><br>
+This PHP module has only been tested with Apache/Linux.
 
+In order to compile the module, please type **phpize** on the directory to generate the config files.
+
+1. install php7-dev (for phpize)
+2. cd to directory with source files
+3. $ phpize
+4. $ ./configure --enable-stata
+5. $ make install
+6. On successful execution, the extension stata.so can be found in the subdirectory ***modules***
 
 
 Example use:
-<pre>
+
+```php
+
 
 /* Reading */
 $res = stata_open("/var/www/html/filename.dta");
 
 echo "Stata observations: " . stata_observations($res);
 echo "Stata variables: " . stata_nvariables($res);
-
 
 print_r(stata_variables($res));
 
@@ -44,7 +49,7 @@ stata_close($res);
 /* Writing */
 
 stata_write("filename.dta", array("data" => array(
-		      1 => array("prim_key" => "232342342", 
+		              1 => array("prim_key" => "232342342", 
                                  "testswitch" => 32.3234, 
                                  "mode" => 32741), 
                       2 => array("prim_key" => "33333333333333333", 
@@ -64,5 +69,5 @@ stata_write("filename.dta", array("data" => array(
                array("labels" => array( "gfk2_live_vl5" => 
                                               array(44 => "44 Face" ,
                                                     55 => "55 Call center"))));
-</pre>
+```
 
