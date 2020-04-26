@@ -26,4 +26,4 @@ print_r($labels);
 echo "Closing Stata file\n";
 stata_close($res);
 
-echo "Done!\n";
+echo "::set-output name=done::Done\n";

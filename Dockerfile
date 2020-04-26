@@ -11,4 +11,6 @@ RUN  cd php_stata \
 
 RUN mkdir tests
 COPY tests tests
-RUN cd tests && php writing.php && php reading.php
+
+COPY entrypoint.sh /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]

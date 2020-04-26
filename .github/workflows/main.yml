@@ -24,4 +24,6 @@ jobs:
 
     # Runs a single command using the runners shell
     - name: run tests on docker
-      run: docker compose .
+      runs: 
+        using: 'docker'
+        image: 'Dockerfile' 
