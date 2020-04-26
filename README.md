@@ -27,10 +27,11 @@ In order to compile the module, please type **phpize** on the directory to gener
 
 Example use:
 
+### Writing
+
 ```php
 <?php
 
-/* Writing */
 
 echo "Opening file test_read.dta for writing...\n";
 
@@ -58,14 +59,13 @@ stata_write("test_read.dta", array("data" => array(
 
 echo "Stata file written...\n";
 ?>
-
 ```
 
+### Reading
 
 ```php
 <?php
 
-// Reading
 
 echo "Opening file test_read.dta...\n";
 $res = stata_open("test_read.dta");
@@ -96,3 +96,10 @@ echo "Done!\n";
 
 ?>
 ```
+
+### Dockerfile
+
+A Dockerfile is included that can be used as a guide on how to compile this for your projects.
+
+
+
